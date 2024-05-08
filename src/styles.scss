@@ -1,0 +1,67 @@
+// INITIAL PRIMENG CONFIGS
+@import 'primeng/resources/primeng.css';
+@import 'primeng/resources/themes/lara-light-blue/theme.css';
+@import 'primeng/resources/primeng.css';
+@import 'primeicons/primeicons.css';
+@import 'primeflex/primeflex.scss';
+
+@import 'swiper/scss';
+@import 'swiper/scss/navigation';
+@import 'swiper/scss/pagination';
+
+// Theme
+@import './assets/theme.css';
+@import 'assets/layout/styles/layout/layout.scss';
+
+// CUSTOM THEMES IMPORTS
+@import 'assets/theme/_sizes';
+@import 'assets/theme/_classes';
+
+// PROJECTS CONFIG TO DEFAULT
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --surface-ground: #edf3fb;
+  --surface-b: red;
+  --indigo-900: #001327;
+  --bg-linear-red: linear-gradient(to right, #bf0000, #ff0001);
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  background-color: var(--surface-ground);
+  color: var(--text-color);
+  min-height: 100%;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+a {
+  cursor: pointer;
+}
+
+a {
+  text-decoration: none;
+  color: var(--text-color);
+}
+
+body,
+input,
+textarea,
+a,
+li,
+ul,
+button {
+  font-weight: 400;
+  font-size: 1rem;
+  font-family: 'Poppins', sans-serif !important;
+}
