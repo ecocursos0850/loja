@@ -6,6 +6,9 @@
 /out-tsc
 /bazel-out
 
+# Deploy
+prd.php
+
 # Node
 /node_modules
 npm-debug.log
