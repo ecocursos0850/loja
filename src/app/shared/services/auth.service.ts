@@ -26,18 +26,26 @@ export class AuthService {
   private httpClient = inject(HttpClient);
   private redirectUrl = signal<string | null>(null);
 
-  login(loginProps: LoginInterface): Observable<any> {
+  login(loginProps: LoginInterface): Observable<LoginInterface> {
     return this.httpClient
-      .post<any>(
+      .post<LoginInterface>(
         `${BASE_URL}/api/v1/auth/authenticate`,
         JSON.stringify(loginProps),
         HEADER
       )
       .pipe(
-        map(response => {
-          const token = response.token;
-          localStorage.setItem('jwt_token', token); // Armazena o token JWT
-          return response.user;
+        map(() => {
+          const user = {
+            id: uuid.v4(),
+            email: loginProps.email
+          };
+
+          localStorage.setItem('auth', JSON.stringify(user));
+          const login = localStorage.setItem('auth', JSON.stringify(user));
+          if (login) {
+            window.parent.postMessage({ login }, 'https://hmgportal.ecocursos.com.br');
+          }
+          return user;
         })
       );
   }
@@ -61,14 +69,11 @@ export class AuthService {
     }
   }
 
-  getStatus(): Observable<any> {
-    const token = localStorage.getItem('jwt_token');
-    if (token) {
-      // Retorna o token JWT armazenado
-      return of(token);
-    } else {
-      return throwError(new Error('Usuário não autenticado'));
-    }
+  getStatus(): Observable<LoginInterface> {
+    const userString = localStorage.getItem('auth');
+    const user = userString ? JSON.parse(userString) : null;
+
+    return of(user);
   }
 
   setRedirectUrl(url: string): void {
