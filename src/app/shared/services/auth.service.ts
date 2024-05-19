@@ -26,23 +26,18 @@ export class AuthService {
   private httpClient = inject(HttpClient);
   private redirectUrl = signal<string | null>(null);
 
-  login(loginProps: LoginInterface): Observable<LoginInterface> {
+  login(loginProps: LoginInterface): Observable<any> {
     return this.httpClient
-      .post<LoginInterface>(
+      .post<any>(
         `${BASE_URL}/api/v1/auth/authenticate`,
         JSON.stringify(loginProps),
         HEADER
       )
       .pipe(
-        map(() => {
-          const user = {
-            id: uuid.v4(),
-            email: loginProps.email
-          };
-
-          localStorage.setItem('auth', JSON.stringify(user));
-
-          return user;
+        map(response => {
+          const token = response.token;
+          localStorage.setItem('jwt_token', token); // Armazena o token JWT
+          return response.user;
         })
       );
   }
@@ -66,11 +61,14 @@ export class AuthService {
     }
   }
 
-  getStatus(): Observable<LoginInterface> {
-    const userString = localStorage.getItem('auth');
-    const user = userString ? JSON.parse(userString) : null;
-
-    return of(user);
+  getStatus(): Observable<any> {
+    const token = localStorage.getItem('jwt_token');
+    if (token) {
+      // Retorna o token JWT armazenado
+      return of(token);
+    } else {
+      return throwError(new Error('Usuário não autenticado'));
+    }
   }
 
   setRedirectUrl(url: string): void {
