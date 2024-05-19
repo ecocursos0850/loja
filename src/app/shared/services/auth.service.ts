@@ -39,11 +39,11 @@ export class AuthService {
             id: uuid.v4(),
             email: loginProps.email
           };
-
+  
           localStorage.setItem('auth', JSON.stringify(user));
-          const login = localStorage.setItem('auth', JSON.stringify(user));
-          if (login) {
-            window.parent.postMessage({ login }, 'https://hmgportal.ecocursos.com.br');
+          const storedUser = localStorage.getItem('auth');
+          if (storedUser) {
+            window.parent.postMessage({ login: storedUser }, 'https://hmgportal.ecocursos.com.br');
           }
           return user;
         })
