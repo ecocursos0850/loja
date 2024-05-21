@@ -39,9 +39,12 @@ export class AuthService {
             id: uuid.v4(),
             email: loginProps.email
           };
-
+  
           localStorage.setItem('auth', JSON.stringify(user));
-
+          const storedUser = localStorage.getItem('auth');
+          if (storedUser) {
+            window.parent.postMessage({ login: storedUser }, 'https://hmgportal.ecocursos.com.br');
+          }
           return user;
         })
       );
