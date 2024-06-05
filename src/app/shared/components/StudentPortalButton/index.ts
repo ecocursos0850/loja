@@ -122,7 +122,7 @@ export class StudentPortalButtonComponent implements OnInit {
 
   goToLogin(): void {
     const hostname = window.location.origin;
-    const url = `${hostname}/login`;
+    let url = `${hostname}/login`;
 
     window.open(url, '_blank');
   }
@@ -132,7 +132,11 @@ export class StudentPortalButtonComponent implements OnInit {
   }
   
   goToPortal(): void {
-    const url = Constants.portalLink;
+    let url = Constants.portalLink;
+
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
+    }
 
     window.open(url, '_blank');
   }

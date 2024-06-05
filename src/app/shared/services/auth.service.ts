@@ -26,21 +26,21 @@ export class AuthService {
   private httpClient = inject(HttpClient);
   private redirectUrl = signal<string | null>(null);
 
-  login(loginProps: LoginInterface): Observable<LoginInterface> {
+  login(loginProps: LoginInterface): Observable<any> {
     return this.httpClient
-      .post<LoginInterface>(
+      .post<any>(
         `${BASE_URL}/api/v1/auth/authenticate`,
         JSON.stringify(loginProps),
         HEADER
       )
       .pipe(
-        map(() => {
+        map((data) => {
           const user = {
             id: uuid.v4(),
             email: loginProps.email
           };
-  
           localStorage.setItem('auth', JSON.stringify(user));
+          localStorage.setItem('token', data["access_token"]);
           const storedUser = localStorage.getItem('auth');
           if (storedUser) {
             window.parent.postMessage({ login: storedUser }, 'https://hmgportal.ecocursos.com.br');
