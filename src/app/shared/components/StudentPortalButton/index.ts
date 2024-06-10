@@ -32,7 +32,7 @@ template: `
     <div id="button_box" style="display: flex; gap: 10px;">
       <p-button
         id="class_button"
-        label="Portal"
+        label="Área do Aluno"
         (onClick)="goToLogin()"
         styleClass="border-round-2xl p-button"
       ></p-button>
