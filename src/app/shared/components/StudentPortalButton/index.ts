@@ -124,7 +124,7 @@ export class StudentPortalButtonComponent implements OnInit {
     const hostname = window.location.origin;
     let url = `${hostname}/login`;
 
-    window.open(url, '_blank');
+    window.open(url, '_parent');
   }
 
     goToSimulados() {
