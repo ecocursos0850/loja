@@ -111,7 +111,7 @@ import { StudentPortalButtonComponent } from '../../../shared/components/Student
         </div>
 
         <app-student-portal-button
-          class="hidden col-12 md:col-0 lg:inline-flex lg:col-2 justify-content-end"
+          class="hidden col-12 md:col-0 lg:inline-flex lg:col-2"
         />
       </div>
 
