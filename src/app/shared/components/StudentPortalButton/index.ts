@@ -29,7 +29,7 @@ template: `
   <ng-container *ngIf="!userName; then noHasUser; else hasUser"></ng-container>
 
   <ng-template #noHasUser>
-    <div id="button_box" style="display: flex; gap: 10px;">
+    <div id="button_box" style="display: flex; gap: 10px; text-wrap: nowrap;">
       <p-button
         id="class_button"
         label="Área do Aluno"
