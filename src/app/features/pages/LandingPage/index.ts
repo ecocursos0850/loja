@@ -81,7 +81,7 @@ interface EventItem {
               class="col-12 text-center sm:text-left md:col-6 sm:col-11"
             >
               <div class="mb-6">
-                <h1 class="text-4xl">Você já escolheu seu tema?</h1>
+                <h1 class="text-4xl">Você já escolheu o curso?</h1>
               </div>
               <p-timeline
                 [value]="events"
@@ -106,7 +106,7 @@ interface EventItem {
                   </p-card>
                 </ng-template>
               </p-timeline>
-              <div class="col-12 ">
+              <div class="col-12 " style="display: none !important">
                 <p-button
                   iconPos="right"
                   label="Fale com nossos consultores"
@@ -148,15 +148,6 @@ interface EventItem {
                       class="text-over text-600 line-height-4"
                       >{{ product.description }}</span
                     >
-                  </div>
-                  <div class="w-full car-buttons mt-5">
-                    <p-button
-                      type="button"
-                      styleClass="p-button p-button-danger p-button-text"
-                      label="Fale conosco"
-                      icon="pi pi-arrow-right"
-                      (onClick)="goToSalesRep()"
-                    />
                   </div>
                 </div>
               </ng-template>

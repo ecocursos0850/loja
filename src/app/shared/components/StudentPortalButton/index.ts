@@ -138,7 +138,7 @@ export class StudentPortalButtonComponent implements OnInit {
       url = url + "?token=" + localStorage.getItem('token')?.toString();
     }
 
-    window.open(url, '_blank');
+    window.open(url, '_parent');
   }
 
   handleLogout(): void {

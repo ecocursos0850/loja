@@ -79,28 +79,28 @@ SlidesConstants: [
 ],
   EventsInformationConstants: [
     {
-      status: '01. ENTRE EM CONTATO COM OS NOSSOS CONSULTORES ESPECIALISTAS!',
+      status: '01. ENTRE EM CONTATO COM OS NOSSOS CONSULTORES ESPECIALISTAS!', 
       icon: 'pi pi-angle-right',
       color: 'var(--red-600)',
       iconColor: 'text-white',
       description:
-        'Comprar pelo site é prático, mas com os nossos vendedores você garante descontos especiais para garantir o seu curso.'
+        'Comprar pelo site é prático, porém, falando com os um dos nossos consultores, você garante desconto especial para a compra do curso desejado.'
     },
     {
       status:
-        '02. APÓS REALIZAR O SEU CADASTRO, O CONSULTOR ENCAMINHARÁ O SEU LINK DE PAGAMENTO COM O DESCONTO ESCOLHIDO!',
+        '02. APÓS REALIZAR O SEU CADASTRO <a href="https://www.ecocursos.com.br/cadastro">AQUI NO SITE</a>, VOCÊ PODE EXPLORAR A COMPRA DE UM DOS NOSSOS CURSOS!',
       icon: 'pi pi-angle-right',
       iconColor: 'text-900',
       color: 'var(--gray-100)',
       description:
-        'Ao realizar o pagamento do curso, você receberá na mesma hora os seus dados de acesso do Portal e o seu curso já estará disponível para início.'
+        'Após a confirmação da compra de um curso, o sistema irá habilitar seu acesso imediatamente ao portal do aluno, assim você terá acesso aos conteúdos dos cursos adquiridos, e o acesso é vitalício.'
     },
     {
-      status: '03. RECEBEU OS SEUS DADOS? ',
+      status: '03. PRECISA DE ALGUMA AJUDA? ',
       icon: 'pi pi-angle-right',
       color: 'var(--gray-100)',
       iconColor: 'text-900',
-      description: 'Acesse o seu Portal e inicie o seu curso.'
+      description: 'Estamos muitos felizes em ter você aqui conosco! Qualquer dúvida você pode nos chamar <a href="https://linktr.ee/ecocursosposgraduacao" target="_blank">acessando aqui</a>.'
     }
   ]
 };
