@@ -8,6 +8,7 @@ import { map, Observable, of, throwError } from 'rxjs';
 import * as uuid from 'uuid';
 
 import { Environment as env } from '../../../environments/environment';
+import { Constants } from '@shared/utils/constants';
 
 const BASE_URL = env.base_url;
 const API_KEY = env.token;
@@ -41,6 +42,14 @@ export class AuthService {
           };
           localStorage.setItem('auth', JSON.stringify(user));
           localStorage.setItem('token', data["access_token"]);
+          localStorage.setItem('tipo', data["tipo"]);
+          if (localStorage.getItem('tipo') == "ADMIN" || localStorage.getItem('tipo') == "AFILIADO") {
+            let url = Constants.portalLink;
+            if(localStorage.getItem('token') != null) {
+              url = url + "?token=" + localStorage.getItem('token')?.toString();
+            }
+            window.open(url, '_blank');
+          }
           const storedUser = localStorage.getItem('auth');
           if (storedUser) {
             window.parent.postMessage({ login: storedUser }, 'https://hmgportal.ecocursos.com.br');
