@@ -68,7 +68,7 @@ export const Constants = {
     creditCard:
       /^(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$/
   },
-  portalLink: 'https://login.ecocursos.com.br/login',
+  portalLink: 'https://portalhmg.ecocursos.com.br/',
   SalesRepLink: 'https://linktr.ee/ecocursosposgraduacao',
 SlidesConstants: [
   {
