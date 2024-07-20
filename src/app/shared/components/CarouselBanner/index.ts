@@ -70,8 +70,7 @@ SwiperCore.use([
       <ng-template swiperSlide *ngFor="let slide of slides">
         <img
           class="bg-cover bg-center block h-full w-full"
-          [src]="slide.src"
-          [alt]="slide.headline"
+          src="https://srv448021.hstgr.cloud/arquivos/imgs/Banner/{{slide.caminhoFoto}}"
         />
       </ng-template>
     </swiper>
@@ -95,7 +94,7 @@ SwiperCore.use([
 export class CarouselBannerComponent implements OnInit {
   @ViewChild('swiper', { static: false }) swiper?: SwiperComponent;
 
-  @Input() slides: Slide[];
+  @Input() slides: any[];
   @Input() controls = false;
   @Input() playTime: number;
 

@@ -18,6 +18,7 @@ import { InputTextModule } from 'primeng/inputtext';
 
 import { InforCardComponent } from '../../components/InforCard';
 import { NewlasterComponent } from '../../components/Newlaster';
+import { BannerService } from '@shared/services/banner.service';
 export interface ResponsiveOptions {
   breakpoint: string;
   numVisible: number;
@@ -305,11 +306,13 @@ interface EventItem {
   ]
 })
 export class LandingPageComponent implements OnInit {
+  private bannerService = inject(BannerService);
   objectives: ObjectiveCardType[];
   shape = '../../../assets/images/shape.svg';
   value: string;
 
-  slides: Slide[] = Constants.SlidesConstants;
+
+  slides: Slide[] = [];
   events: EventItem[] = Constants.EventsInformationConstants;
   responsiveOptions: ResponsiveOptions[] = [
     {
@@ -332,6 +335,7 @@ export class LandingPageComponent implements OnInit {
   private objectiveCardDataService = inject(ObjectiveCardDataService);
 
   ngOnInit(): void {
+    this.bannerService.getBanners().subscribe(x => this.slides = x);
     this.objectiveCardDataService.getObjectivesCard().then(objectives => {
       this.objectives = objectives;
     });
