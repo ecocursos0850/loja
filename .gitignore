@@ -8,6 +8,7 @@
 
 # Deploy
 prd.php
+/src/app/shared/utils/constants/index.ts
 
 # Node
 /node_modules
