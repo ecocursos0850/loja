@@ -48,7 +48,7 @@ export class FiltersService {
       switchMap(value => {
         const itemsWithSubcategories: ItemsModel[] = [];
 
-        this.desiredOrder.forEach(desiredItem => {
+        this.desiredOrder!.forEach(desiredItem => {
           const matchingItem = value.find(
             res => res.titulo.toLowerCase() === desiredItem.toLowerCase()
           );
@@ -68,7 +68,8 @@ export class FiltersService {
               matchingItem.subCategorias &&
               matchingItem.subCategorias?.length
             ) {
-              matchingItem.cursos.forEach(curso => {
+              console.log(this.desiredOrder);
+              matchingItem.cursos?.forEach(curso => {
                 if (curso.subCategoria) {
                   const subCategoriaId = curso.subCategoria.id.toString();
                   const subCategoriaItem = subCategoriaItems.find(

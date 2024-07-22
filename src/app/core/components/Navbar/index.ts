@@ -432,6 +432,7 @@ export class NavbarComponent implements OnInit {
       .getFilters(this.hasIcons, this.hasLinkToItems, this.typeMenu, this.label)
       .subscribe({
         next: res => {
+          console.log(res);
           this.items = res;
         }
       });
