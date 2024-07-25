@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgForOf, NgIf } from '@angular/common';
 import {
@@ -55,7 +55,7 @@ interface EventItem {
         <app-carousel-banner
           [playTime]="6000"
           [slides]="slides"
-          [controls]="true"
+          [controls]="totalBanners() == 1 ? false : true"
         />
         <app-infor-card
           AnimateOnScroll
@@ -193,12 +193,23 @@ interface EventItem {
                 headerStyleClass="bg-white"
               >
                 <p class="text-600 line-height-4">
-                Os certificados do Portal <strong><span style="color: black;">ECO</span><span style="color: red;">CURSOS</span></strong>
-                de cursos livres são reconhecidos em todo território nacional para atualização, aperfeiçoamento,
-                capacitação profissional e atividades extracurriculares, conforme a <strong>Lei de Diretrizes e Bases - LDB
-                Lei 9394/96, Art. 40; CNE/CNB Nº 06/2012, Art. 25; Decreto Presidencial 5154/2004, Artigo 3º e § 2º.</strong>
-                Portanto, não precisam de reconhecimento do MEC para cursos livres. Nos cursos de Graduação e Pós-graduação,
-                os certificados possuem reconhecimento do MEC, uma vez que são emitidos por renomadas Universidades parceiras.
+                  Os certificados do Portal
+                  <strong
+                    ><span style="color: black;">ECO</span
+                    ><span style="color: red;">CURSOS</span></strong
+                  >
+                  de cursos livres são reconhecidos em todo território nacional
+                  para atualização, aperfeiçoamento, capacitação profissional e
+                  atividades extracurriculares, conforme a
+                  <strong
+                    >Lei de Diretrizes e Bases - LDB Lei 9394/96, Art. 40;
+                    CNE/CNB Nº 06/2012, Art. 25; Decreto Presidencial 5154/2004,
+                    Artigo 3º e § 2º.</strong
+                  >
+                  Portanto, não precisam de reconhecimento do MEC para cursos
+                  livres. Nos cursos de Graduação e Pós-graduação, os
+                  certificados possuem reconhecimento do MEC, uma vez que são
+                  emitidos por renomadas Universidades parceiras.
                 </p>
               </p-accordionTab>
             </p-accordion>
@@ -307,10 +318,10 @@ interface EventItem {
 })
 export class LandingPageComponent implements OnInit {
   private bannerService = inject(BannerService);
+  public totalBanners = signal<number>(0);
   objectives: ObjectiveCardType[];
   shape = '../../../assets/images/shape.svg';
   value: string;
-
 
   slides: Slide[] = [];
   events: EventItem[] = Constants.EventsInformationConstants;
@@ -335,7 +346,10 @@ export class LandingPageComponent implements OnInit {
   private objectiveCardDataService = inject(ObjectiveCardDataService);
 
   ngOnInit(): void {
-    this.bannerService.getBanners().subscribe(x => this.slides = x);
+    this.bannerService.getBanners().subscribe(x => {
+      this.slides = x;
+      this.totalBanners.update(() => this.slides.length);
+    });
     this.objectiveCardDataService.getObjectivesCard().then(objectives => {
       this.objectives = objectives;
     });

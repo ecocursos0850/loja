@@ -64,7 +64,7 @@ SwiperCore.use([
       [centeredSlides]="true"
       [allowTouchMove]="true"
       [autoplay]="{ delay: playTime, disableOnInteraction: false }"
-      [pagination]="{ clickable: true }"
+      [pagination]="{ clickable: this.slides.length == 1 ? false : true }"
       [navigation]="controls"
     >
       <ng-template swiperSlide *ngFor="let slide of slides">
