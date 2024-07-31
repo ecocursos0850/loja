@@ -63,12 +63,14 @@ SwiperCore.use([
       [autoHeight]="true"
       [centeredSlides]="true"
       [allowTouchMove]="true"
-      [autoplay]="{ delay: playTime, disableOnInteraction: false }"
+      
       [pagination]="{ clickable: this.slides.length == 1 ? false : true }"
       [navigation]="controls"
+
     >
-      <ng-template swiperSlide *ngFor="let slide of slides">
+      <ng-template swiperSlide lazy="true" *ngFor="let slide of slides">
         <img
+          loading="lazy"
           class="bg-cover bg-center block h-full w-full"
           src="https://srv448021.hstgr.cloud/arquivos/imgs/Banner/{{slide.caminhoFoto}}"
         />

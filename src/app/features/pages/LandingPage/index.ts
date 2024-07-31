@@ -345,11 +345,15 @@ export class LandingPageComponent implements OnInit {
 
   private objectiveCardDataService = inject(ObjectiveCardDataService);
 
-  ngOnInit(): void {
+  constructor() {
     this.bannerService.getBanners().subscribe(x => {
       this.slides = x;
+      console.log(this.slides);
       this.totalBanners.update(() => this.slides.length);
     });
+  }
+
+  ngOnInit(): void {
     this.objectiveCardDataService.getObjectivesCard().then(objectives => {
       this.objectives = objectives;
     });
