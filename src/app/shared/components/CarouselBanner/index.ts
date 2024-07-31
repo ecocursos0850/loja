@@ -60,17 +60,15 @@ SwiperCore.use([
       #swiper
       class="w-full h-full"
       [loop]="true"
-      [autoHeight]="true"
       [centeredSlides]="true"
       [allowTouchMove]="true"
-      
+      [watchOverflow]="false"
       [pagination]="{ clickable: this.slides.length == 1 ? false : true }"
       [navigation]="controls"
 
     >
-      <ng-template swiperSlide lazy="true" *ngFor="let slide of slides">
+      <ng-template swiperSlide *ngFor="let slide of slides">
         <img
-          loading="lazy"
           class="bg-cover bg-center block h-full w-full"
           src="https://srv448021.hstgr.cloud/arquivos/imgs/Banner/{{slide.caminhoFoto}}"
         />
@@ -89,18 +87,19 @@ SwiperCore.use([
           background: var(--red-500);
         }
       }
+
     `
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class CarouselBannerComponent implements OnInit {
-  @ViewChild('swiper', { static: false }) swiper?: SwiperComponent;
+  @ViewChild('swiper', { static: true }) swiper?: SwiperComponent;
 
   @Input() slides: any[];
   @Input() controls = false;
   @Input() playTime: number;
 
-  animationInProgress = false;
+  animationInProgress = true;
 
   ngOnInit(): void {
     this.swiper?.swiperRef.autoplay.start();

@@ -55,7 +55,7 @@ interface EventItem {
         <app-carousel-banner
           [playTime]="6000"
           [slides]="slides"
-          [controls]="totalBanners() == 1 ? false : true"
+          [controls]="true"
         />
         <app-infor-card
           AnimateOnScroll
@@ -238,6 +238,11 @@ interface EventItem {
   `,
   styles: [
     `
+      .loading-banner {
+        height: 380px;
+        width: 100vh;
+      }
+
       .animition-type-selector {
         display: flex;
         flex-wrap: wrap;
@@ -344,16 +349,13 @@ export class LandingPageComponent implements OnInit {
   ];
 
   private objectiveCardDataService = inject(ObjectiveCardDataService);
-
-  constructor() {
+  
+  ngOnInit(): void {
     this.bannerService.getBanners().subscribe(x => {
       this.slides = x;
       console.log(this.slides);
-      this.totalBanners.update(() => this.slides.length);
+      // this.totalBanners.update(() => this.slides.length);
     });
-  }
-
-  ngOnInit(): void {
     this.objectiveCardDataService.getObjectivesCard().then(objectives => {
       this.objectives = objectives;
     });
