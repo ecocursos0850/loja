@@ -69,23 +69,23 @@ export class FiltersService {
               matchingItem.subCategorias?.length
             ) {
               console.log(this.desiredOrder);
-              matchingItem.cursos?.forEach(curso => {
-                if (curso.subCategoria) {
-                  const subCategoriaId = curso.subCategoria.id.toString();
+              matchingItem.subCategorias?.forEach(subCategoria => {
+                if (subCategoria) {
+                  const subCategoriaId = subCategoria.id.toString();
                   const subCategoriaItem = subCategoriaItems.find(
                     item => item.id === subCategoriaId
                   );
 
                   if (!subCategoriaItem) {
                     const newSubCategoriaItem = new ItemsModel(
-                      curso.subCategoria.titulo
+                      subCategoria.titulo
                     );
                     newSubCategoriaItem.id = subCategoriaId;
                     newSubCategoriaItem.routerLink = [`${this.baseCourseUrl}`];
                     newSubCategoriaItem.icon = 'pi pi-fw pi-book';
                     newSubCategoriaItem.queryParams = {
                       type: 'subcategoria',
-                      id: curso.subCategoria.id
+                      id: subCategoria.id
                     };
 
                     subCategoriaItems.push(newSubCategoriaItem);

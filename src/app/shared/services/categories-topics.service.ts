@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { CategoriesTopicsType } from '@shared/models/interface/categoires-topics.interface';
 
-import { map, Observable } from 'rxjs';
+import { map, Observable, tap } from 'rxjs';
 
 import { Environment as env } from '../../../environments/environment';
 
@@ -25,6 +25,6 @@ export class CategoriesTopicsService {
   getAllCategoriesTopics(): Observable<CategoriesTopicsType[]> {
     return this.httpClient
       .get<CategoriesTopicsType[]>(`${BASE_URL}/categoria`, HEADER)
-      .pipe(map(course => course.filter(res => res.status === 1)));
+      .pipe(tap(x => x.forEach(x => console.log("subcategorias" + x.subCategorias.toString()))),map(course => course.filter(res => res.status === 1)));
   }
 }
