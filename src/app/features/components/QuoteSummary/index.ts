@@ -124,7 +124,7 @@ import { CouponComponent } from '../Coupon';
         class="flex justify-content-between"
       >
         <strong> Cupom de deconto </strong>
-        <span>- {{ couponDiscount()?.valor | currency }}</span>
+        <span>- {{ couponDiscount()?.valor }}</span>
       </div>
     </ng-template>
 
@@ -212,7 +212,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
         this.calculateTotalPayment(
           this.totalPrice(),
-          Number(this.couponDiscount()?.valor ?? 0),
+          Number((this.totalPrice() * this.couponDiscount()?.valor) / 100 ?? 0),
           this.discountPercent()
         );
         this.store.dispatch(
@@ -258,6 +258,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   ): void {
     this.total.update(() => {
       const decreaseTotal = total - discount;
+      console.log(decreaseTotal - decreaseTotal * discountPercent);
       return decreaseTotal - decreaseTotal * discountPercent;
     });
   }
