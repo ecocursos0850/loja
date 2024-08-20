@@ -22,8 +22,8 @@ export const Constants = {
     ],
     contactUs: [
       { link: 'tel:+551734223725', label: 'Telefone (17) 3422-3725' },
-      { link: 'https://wa.me/5517997245237', label: 'WhatsApp +55 17 99724-5237' },
-      { link: 'https://wa.me/5517997245237', label: 'Afiliado ECOCURSOS' }
+      //{ link: 'https://wa.me/5517997245237', label: 'WhatsApp +55 17 99724-5237' },
+      //{ link: 'https://wa.me/5517997245237', label: 'Afiliado ECOCURSOS' }
     ],
     routersFooter: [
       { link: 'simulados', label: 'Simulados' }
