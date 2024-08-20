@@ -124,7 +124,7 @@ import { CouponComponent } from '../Coupon';
         class="flex justify-content-between"
       >
         <strong> Cupom de deconto </strong>
-        <span>- {{ couponDiscount()?.valor }}</span>
+        <span>- {{ couponDiscount()?.valor }} %</span>
       </div>
     </ng-template>
 
