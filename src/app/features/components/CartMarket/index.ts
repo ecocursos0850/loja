@@ -172,6 +172,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 styleClass="p-button-sm"
                 label="Fechar pedido"
                 [size]="'small'"
+                [disabled]="disabledButton()"
               />
             </div>
           </ng-template>
@@ -253,6 +254,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   mountOrder1 = new OrderModel();
 
   availableHours = signal<number>(0);
+  disabledButton = signal<boolean>(false);
   totalFinalValue = signal<number>(0);
   cartSubTotalPrice = signal<number>(0);
   mountOrder = signal(new OrderModel());
@@ -353,6 +355,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
  closeOrder(): void {
+  this.disabledButton.set(true);
   const mock: OrderModel = {
     aluno: {
       id: this.userId
