@@ -148,7 +148,9 @@ import { SanitizeHtmlPipe } from '../../../shared/pipes/sanitize-html.pipe';
               class="flex mt-5 align-items-center justify-content-center md:justify-content-between grid m-0"
             >
               <h1
-              *ngIf="course.categoria?.titulo !== 'GRADUAÇÃO' && course.categoria?.titulo !== '2ª GRADUAÇÃO'"
+              *ngIf="course.categoria?.titulo !== 'GRADUAÇÃO' &&
+              course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
+              course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'"
                 class="font-bold text-700 text-center md:text-left m-0 text-5xl col-12 md:col-6"
               >
                 {{ course.preco | currency }}
@@ -159,18 +161,24 @@ import { SanitizeHtmlPipe } from '../../../shared/pipes/sanitize-html.pipe';
                 class="mt-3 md:mt-0"
                 styleClass="flex-5"
                 [disabled]="disabledButton(course.id)"
-                [label]="
-                course.categoria?.titulo !== 'GRADUAÇÃO' && course.categoria?.titulo !== '2ª GRADUAÇÃO'
+                [label]=" 
+                course.categoria?.titulo !== 'GRADUAÇÃO' &&
+                course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
+                course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
                     ? 'Adicionar ao carrinho'
                     : 'Falar com vendedor'
                 "
                 [icon]="
-                course.categoria?.titulo !== 'GRADUAÇÃO' && course.categoria?.titulo !== '2ª GRADUAÇÃO'
+                course.categoria?.titulo !== 'GRADUAÇÃO' &&
+                course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
+                course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
                     ? 'pi pi-cart-plus'
                     : 'pi pi-send'
                 "
                 (onClick)="
-                course.categoria?.titulo !== 'GRADUAÇÃO' && course.categoria?.titulo !== '2ª GRADUAÇÃO'
+                course.categoria?.titulo !== 'GRADUAÇÃO' &&
+                course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
+                course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
                     ? addToCart(course)
                     : goToSalesRep()
                 "
