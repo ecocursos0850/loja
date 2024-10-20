@@ -189,7 +189,9 @@ import { NoDataComponent } from '../../../shared/components/NoData/index';
 
                   <div
                     class="flex flex-column"
-                    *ngIf="course.categoria?.titulo !== 'GRADUAÇÃO' && course.categoria?.titulo !== '2ª GRADUAÇÃO'"
+                    *ngIf="course.categoria?.titulo !== 'GRADUAÇÃO' &&
+                    course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
+                    course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'"
                   >
                                    <span
                   [ngClass]="hasParcels(course.qtdParcelas) ? 'text-base' : 'text-2xl'"
@@ -211,19 +213,25 @@ import { NoDataComponent } from '../../../shared/components/NoData/index';
                 <footer class="w-full flex justify-content-center">
                   <p-button
                     [label]="
-                    course.categoria?.titulo !== 'GRADUAÇÃO' && course.categoria?.titulo !== '2ª GRADUAÇÃO'
+                    course.categoria?.titulo !== 'GRADUAÇÃO' && 
+                    course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
+                    course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
                         ? 'Adicionar ao carrinho'
                         : 'Falar com vendedor'
                     "
                     styleClass="p-2"
                     [icon]="
-                    course.categoria?.titulo !== 'GRADUAÇÃO' && course.categoria?.titulo !== '2ª GRADUAÇÃO'
+                    course.categoria?.titulo !== 'GRADUAÇÃO'&&
+                    course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
+                    course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
                         ? 'pi pi-cart-plus'
                         : 'pi pi-send'
                     "
                     [disabled]="disabledButton(course.id)"
                     (onClick)="
-                    course.categoria?.titulo !== 'GRADUAÇÃO' && course.categoria?.titulo !== '2ª GRADUAÇÃO'
+                    course.categoria?.titulo !== 'GRADUAÇÃO' &&
+                    course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
+                    course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
                         ? addToCart(course)
                         : goToSalesRep()
                     "
