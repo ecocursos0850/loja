@@ -209,11 +209,16 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         this.discountPercent.update(() => {
           return this.hasFreeCourses() ? 1 : Number(discountPercent) / 100;
         });
+        var valor = 0;
+
+        if (Number((this.totalPrice() * this.couponDiscount()?.valor ) / 100 ?? 0) != undefined) {
+          valor = Number((this.totalPrice() * this.couponDiscount()?.valor ) / 100 ?? 0);
+        }
 
         this.calculateTotalPayment(
           this.totalPrice(),
-          Number((this.totalPrice() * this.couponDiscount()?.valor) / 100 ?? 0),
-          this.discountPercent()
+          isNaN(valor) ? 0 : valor,
+          this.discountPercent() ?? 0
         );
         this.store.dispatch(
           CheckoutActions.selectTotalPayment({ total: this.total() })
@@ -256,11 +261,16 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
     discount: number,
     discountPercent: number
   ): void {
+    console.log(total);
+    console.log(discount);
+    console.log(discountPercent);
     this.total.update(() => {
       const decreaseTotal = total - discount;
+      console.log("A " + decreaseTotal);
       console.log(decreaseTotal - decreaseTotal * discountPercent);
       return decreaseTotal - decreaseTotal * discountPercent;
     });
+    console.log(this.total());
   }
 
   ngOnDestroy(): void {
