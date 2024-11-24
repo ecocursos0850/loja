@@ -32,6 +32,7 @@ import { Store } from '@ngrx/store';
 import { TagModule } from 'primeng/tag';
 
 import { SanitizeHtmlPipe } from '../../../shared/pipes/sanitize-html.pipe';
+import { DialogModule } from 'primeng/dialog';
 
 @Component({
   selector: 'app-page-card-details',
@@ -56,59 +57,86 @@ import { SanitizeHtmlPipe } from '../../../shared/pipes/sanitize-html.pipe';
               />
             </div>
 
-            <div class="flex w-full flex-1 my-4 mx-0 grid">
-              <div class="flex col-5 flex-column gap-1">
-                <label class="font-bold text-500">{{
-                  'Carga horária' | titlecase
-                }}</label>
-                <span class="line-height-0 flex align-items-center gap-1">
-                  <i class="text-red-600 pi pi-clock"></i>
-                  <small class="text-sm">
-                    {{ course.cargaHoraria }} horas</small
-                  >
-                </span>
+            <ng-container *ngIf="course.categoria.titulo.toUpperCase() == 'PÓS-GRADUAÇÃO / MBA'; else elsePos">
+              <div class="flex w-full flex-column row-gap-3">
+                <div class="flex m-xl-2">
+                <p-button 
+                  label="Ver matriz curricular" 
+                  icon="pi pi-shopping-cart"
+                  (click)="this.visibleDialog = !this.visibleDialog"
+                  class="w-full"
+                  />
+                </div>
+                <div class="flex gap-1">
+                  <i class='text-red-600 pi pi-file'></i>
+                  <b>Conclusão em 6 meses</b>
+                </div>
+                <div class="flex gap-1">
+                  <i class='text-red-600 pi pi-home'></i>
+                  <b>Sua pós 100% EAD</b>
+                </div>
+                <div class="flex gap-1">
+                  <i class='text-red-600 pi pi-dollar'></i>
+                  <b>Sem taxa de matrícula</b>
+                </div>
               </div>
-              <div class="flex col-7 flex-column gap-1">
-                <label class="font-bold text-500">{{
-                  'Material didático' | titlecase
-                }}</label>
-                <span class="line-height-0 flex align-items-center gap-1">
-                  <i class="text-red-600 pi pi-cloud"></i>
-                  <small class="text-sm">
-                    {{ pdfQuantity }}
-                    {{ pdfQuantity > 1 ? 'Arquivos' : 'Arquivo' }}
-                  </small>
-                </span>
+            </ng-container>
+
+            <ng-template #elsePos>
+              <div class="flex w-full flex-1 my-4 mx-0 grid" #elsePos>
+                <div class="flex col-5 flex-column gap-1">
+                  <label class="font-bold text-500">{{
+                    'Carga horária' | titlecase
+                  }}</label>
+                  <span class="line-height-0 flex align-items-center gap-1">
+                    <i class="text-red-600 pi pi-clock"></i>
+                    <small class="text-sm">
+                      {{ course.cargaHoraria }} horas</small
+                    >
+                  </span>
+                </div>
+                <div class="flex col-7 flex-column gap-1">
+                  <label class="font-bold text-500">{{
+                    'Material didático' | titlecase
+                  }}</label>
+                  <span class="line-height-0 flex align-items-center gap-1">
+                    <i class="text-red-600 pi pi-cloud"></i>
+                    <small class="text-sm">
+                      {{ pdfQuantity }}
+                      {{ pdfQuantity > 1 ? 'Arquivos' : 'Arquivo' }}
+                    </small>
+                  </span>
+                </div>
+                <div class="flex flex-column col-5 gap-1">
+                  <label class="font-bold text-500">{{
+                    'video aulas' | titlecase
+                  }}</label>
+                  <span class="line-height-0 flex align-items-center gap-1">
+                    <i class="text-red-600 pi pi-video"></i>
+                    <small class="text-sm">
+                      {{ videoQuantity }}
+                      {{ pdfQuantity > 1 ? 'videos' : 'video' }}
+                    </small>
+                  </span>
+                </div>
+                <div class="flex flex-column col-7 gap-1">
+                  <label class="font-bold text-500">{{
+                    'Inclui' | titlecase
+                  }}</label>
+                  <span class="line-height-0 flex align-items-center gap-1">
+                    <i class="text-red-600 pi pi-book"></i>
+                    <small class="text-sm"> Certificado de conclusão </small>
+                  </span>
+                </div>
+                <div class="flex flex-column col-12 gap-1">
+                  <label class="font-bold text-500">{{
+                    'disponibilidade' | titlecase
+                  }}</label>
+                  <span class="line-height-4 flex align-items-center gap-1">
+                  </span>
+                </div>
               </div>
-              <div class="flex flex-column col-5 gap-1">
-                <label class="font-bold text-500">{{
-                  'video aulas' | titlecase
-                }}</label>
-                <span class="line-height-0 flex align-items-center gap-1">
-                  <i class="text-red-600 pi pi-video"></i>
-                  <small class="text-sm">
-                    {{ videoQuantity }}
-                    {{ pdfQuantity > 1 ? 'videos' : 'video' }}
-                  </small>
-                </span>
-              </div>
-              <div class="flex flex-column col-7 gap-1">
-                <label class="font-bold text-500">{{
-                  'Inclui' | titlecase
-                }}</label>
-                <span class="line-height-0 flex align-items-center gap-1">
-                  <i class="text-red-600 pi pi-book"></i>
-                  <small class="text-sm"> Certificado de conclusão </small>
-                </span>
-              </div>
-              <div class="flex flex-column col-12 gap-1">
-                <label class="font-bold text-500">{{
-                  'disponibilidade' | titlecase
-                }}</label>
-                <span class="line-height-4 flex align-items-center gap-1">
-                </span>
-              </div>
-            </div>
+            </ng-template>
           </div>
           <div class="flex flex-column col-12 m-0 md:col-7 px-2">
             <p-tag
@@ -191,7 +219,7 @@ import { SanitizeHtmlPipe } from '../../../shared/pipes/sanitize-html.pipe';
 
         <div class="w-full px-2">
           <div
-            *ngIf="course.conteudo"
+            *ngIf="course.conteudo && course.categoria.titulo.toUpperCase() != 'PÓS-GRADUAÇÃO / MBA'"
             [innerHTML]="course.conteudo | sanitizeHtml"
           ></div>
         </div>
@@ -217,6 +245,16 @@ import { SanitizeHtmlPipe } from '../../../shared/pipes/sanitize-html.pipe';
     <ng-template #noImage>
       <app-no-image />
     </ng-template>
+
+    <p-dialog header="Matriz curricular" [modal]="true" [(visible)]="this.visibleDialog">
+    <div class="w-full px-2">
+          <div
+            *ngIf="course.conteudo"
+            [innerHTML]="course.conteudo | sanitizeHtml"
+          ></div>
+        </div>
+    </p-dialog>
+
   `,
   imports: [
     UpperCasePipe,
@@ -229,7 +267,8 @@ import { SanitizeHtmlPipe } from '../../../shared/pipes/sanitize-html.pipe';
     NoDataComponent,
     NoImageComponent,
     GetDirectoryImage,
-    SanitizeHtmlPipe
+    SanitizeHtmlPipe,
+    DialogModule
   ]
 })
 export class CardDetailsPageComponent implements OnInit {
@@ -245,6 +284,8 @@ export class CardDetailsPageComponent implements OnInit {
   videoQuantity = 0;
   course: CourseType;
   code: string;
+
+  visibleDialog = false;
 
   ngOnInit(): void {
     this.store.dispatch(LoadingAction.loading({ message: true }));
