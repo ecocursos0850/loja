@@ -62,7 +62,7 @@ import { DialogModule } from 'primeng/dialog';
                 <div class="flex m-xl-2">
                 <p-button 
                   label="Ver matriz curricular" 
-                  icon="pi pi-shopping-cart"
+                  icon="pi pi-file"
                   (click)="this.visibleDialog = !this.visibleDialog"
                   class="w-full"
                   />
@@ -158,7 +158,7 @@ import { DialogModule } from 'primeng/dialog';
             <p class="line-height-4">
               {{ course.descricao }}
             </p>
-            <div class="mt-2 flex flex-column gap-2">
+            <div class="mt-2 flex flex-column gap-2" *ngIf="course.categoria.titulo != 'PÓS-GRADUAÇÃO / MBA'">
               <div class="flex gap-1 align-items-center">
                 <i class="text-red-600 pi pi-info-circle"></i>
                 <small class="font-bold text-base">Atenção</small>
@@ -167,6 +167,15 @@ import { DialogModule } from 'primeng/dialog';
                 Você tem prazo de 180 dias para realizar sua avaliação a partir
                 da data de liberação. Após esse prazo seu curso expira devendo
                 efetuar nova inscrição.
+              </p>
+            </div>
+            <div class="mt-2 flex flex-column gap-2" *ngIf="course.categoria.titulo == 'PÓS-GRADUAÇÃO / MBA'">
+              <div class="flex gap-1 align-items-center">
+                <i class="text-red-600 pi pi-info-circle"></i>
+                <small class="font-bold text-base">Certificação</small>
+              </div>
+              <p class="line-height-4">
+              Certificado de pós-graduação lato sensu expedido pela IES Educamais. A Educamais é credenciada pela Portaria MEC No 1.247/2008, de 14/10/2008, e credenciada para oferta de cursos a distância pela Portaria MEC N° 1.168/2018, de 09/11/2018. Os certificados expedidos pela Educamais têm garantia de validade nacional.
               </p>
             </div>
 
@@ -225,7 +234,7 @@ import { DialogModule } from 'primeng/dialog';
         </div>
         <div class="w-full px-2">
           <div
-            *ngIf="course.rodape"
+            *ngIf="course.rodape && course.categoria.titulo != 'PÓS-GRADUAÇÃO / MBA'"
             [innerHTML]="course.rodape | sanitizeHtml"
           ></div>
         </div>
