@@ -65,6 +65,7 @@ SwiperCore.use([
       [watchOverflow]="false"
       [pagination]="{ clickable: this.slides.length == 1 ? false : true }"
       [navigation]="controls"
+      [autoplay]="true"
 
     >
       <ng-template swiperSlide *ngFor="let slide of slides">
