@@ -355,7 +355,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
  closeOrder(): void {
-  this.disabledButton.set(true);
+  //this.disabledButton.set(true);
   const mock: OrderModel = {
     aluno: {
       id: this.userId
