@@ -2,6 +2,6 @@ export const Environment = {
   production: true,
   name: 'prod',
   token:
-    'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyQHVzZXIuY29tLmJyIiwiaWF0IjoxNzUzMTcxNjIxLCJleHAiOjE3NTM4MTI0MjF9.Z3yTjhUDFXsMVWpI7C-OKGF9_HREkQ7qRUKEZP7RWME',
+    'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyQHVzZXIuY29tLmJyIiwiaWF0IjoxNzUzMTcxNjgxLCJleHAiOjE3NTM4MTI0ODF9.RVlHU_e_nA0weRUWIosLyQQqrOdrjUER44fDt0S4YPo',
   base_url: 'https://srv448021.hstgr.cloud:8443'
 };
