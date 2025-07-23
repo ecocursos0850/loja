@@ -216,7 +216,7 @@ interface DropType {
                 </div>
               </div>
 
-              <div class="field col-12 mb-4 flex flex-wrap">
+              <div class="field col-12 mb-4 flex flex-wrap" style="display: none !important">
                 <label
                   for="motherName"
                   htmlFor="motherName"
@@ -296,7 +296,7 @@ interface DropType {
                 </div>
               </div>
 
-              <div class="field col-12 sm:col-3 mb-4 flex flex-wrap">
+              <div class="field col-12 sm:col-3 mb-4 flex flex-wrap" style="display: none !important">
                 <label
                   for="issuingAuthority"
                   htmlFor="issuingAuthority"
@@ -651,7 +651,7 @@ interface DropType {
 
               <p-divider class="col-12" />
 
-              <div class="field col-12 sm:col-9 mb-4 flex flex-wrap">
+              <div class="field col-12 sm:col-9 mb-4 flex flex-wrap" style="display: none !important">
                 <label
                   for="university"
                   htmlFor="university"
@@ -680,7 +680,7 @@ interface DropType {
                 </div>
               </div>
 
-              <div class="field col-12 md:col-3 mb-4">
+              <div class="field col-12 md:col-3 mb-4" style="display: none !important">
                 <label
                   for="endDate"
                   htmlFor="endDate"
@@ -800,12 +800,12 @@ export class RegisterPageComponent implements OnInit {
         this.customPasswordValidatorAsync.bind(this)
       ],
       username: ['', Validators.required],
-      fatherName: [''],
-      motherName: ['', Validators.required],
+      //fatherName: [''],
+      //motherName: ['', Validators.required],
       maritalStatus: [this.maritalStatus, Validators.required],
       cpf: ['', Validators.required, CPFGenericValidator.isValidCpfAsync()],
       rg: ['', Validators.required],
-      issuingAuthority: ['', Validators.required],
+      //issuingAuthority: ['', Validators.required],
       birthDate: ['', Validators.required],
       phone: ['', Validators.required],
       phoneFixed: [''],
@@ -818,8 +818,8 @@ export class RegisterPageComponent implements OnInit {
       houseNumber: ['', Validators.required],
       district: ['', Validators.required],
       complement: [''],
-      university: [''],
-      endDate: [''],
+      //university: [''],
+      //endDate: [''],
       newsReceive: [false]
     });
 
