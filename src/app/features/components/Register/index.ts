@@ -952,6 +952,10 @@ export class RegisterPageComponent implements OnInit {
   }
 
   mountRegisterValues(registerMemberProps: FormGroup): RegisterType {
+    console.log('Form Value:', registerMemberProps.value);
+    console.log('Form Valid:', registerMemberProps.valid);
+    console.log('Form Errors:', registerMemberProps.errors);
+    
     const registerValue = registerMemberProps.value;
     const formatDate = new FormatDate();
 
@@ -963,12 +967,12 @@ export class RegisterPageComponent implements OnInit {
       cpf: registerValue.cpf,
       rg: registerValue.rg,
       estadoCivil: registerValue.maritalStatus.name,
-      orgaoEmissor: registerValue.issuingAuthority,
-      nomePai: registerValue.fatherName,
-      nomeMae: registerValue.motherName,
+      //orgaoEmissor: registerValue.issuingAuthority,
+      //nomePai: registerValue.fatherName,
+      //nomeMae: registerValue.motherName,
       naturalidade: registerValue.birthCity,
-      faculdade: registerValue.university,
-      anoConclusao: this.dateYearFormat.format(registerValue.endDate),
+      //faculdade: registerValue.university,
+      //anoConclusao: this.dateYearFormat.format(registerValue.endDate),
       telefoneFixo: registerValue.phoneFixed,
       dataNascimento: formatDate.formatDateToString(registerValue.birthDate),
       celular: registerValue.phone,
