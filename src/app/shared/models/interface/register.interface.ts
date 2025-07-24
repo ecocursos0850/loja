@@ -6,12 +6,7 @@ export class RegisterType {
   cpf: string;
   rg: string;
   estadoCivil: string;
-  orgaoEmissor: string;
-  nomePai: string;
-  nomeMae: string;
   naturalidade: string;
-  faculdade: string;
-  anoConclusao: string;
   telefoneFixo: string;
   dataNascimento: string;
   celular: string;
