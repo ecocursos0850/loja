@@ -27,6 +27,7 @@ import { CPFGenericValidator } from '@shared/models/classes/cpf-validator.model'
 import { FormatDate } from '@shared/models/classes/format-date.model';
 import { HttpErrorResponse } from '@angular/common/http';
 import { MessageAction } from '@shared/store/actions/message.actions';
+import { formatDate } from '@angular/common';
 
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
@@ -61,24 +62,14 @@ interface DropType {
     CalendarModule
   ],
   template: `
-    <div
-      class="
-      flex flex-1 align-items-center
-      justify-content-center flex-column w-90rem m-auto min-h-full px-4
-      fadeinleft animation-duration-500
-    "
-    >
-      <div
-        class="bg-white flex flex-1 flex-column align-items-center w-full max-w-62rem my-5 p-3 sm:p-5"
-      >
+    <div class="flex flex-1 align-items-center justify-content-center flex-column w-90rem m-auto min-h-full px-4 fadeinleft animation-duration-500">
+      <div class="bg-white flex flex-1 flex-column align-items-center w-full max-w-62rem my-5 p-3 sm:p-5">
         <header class="flex flex-column text-center gap-1">
           <i class="pi pi-user-plus text-5xl font-bold text-red-600"></i>
           <h1 class="text-3xl">Criar uma conta</h1>
         </header>
 
-        <div
-          class="flex-1 flex align-items-center justify-content-center w-full pt-6 pb-8 px-0"
-        >
+        <div class="flex-1 flex align-items-center justify-content-center w-full pt-6 pb-8 px-0">
           <form [formGroup]="form" class="w-full" (ngSubmit)="onSubmit(form)">
             <section class="grid formgrid p-fluid m-0">
               <div class="field col-12 mb-4 flex flex-wrap">
@@ -343,18 +334,9 @@ interface DropType {
               </div>
 
               <div class="field col-12 sm:col-3 mb-4 flex flex-wrap">
-                <label for="sex" htmlFor="sex" class="font-medium text-900"
-                  >Sexo
-                  <small
-                    id="birthDate-help"
-                    [ngClass]="
-                      form.get('sex')?.invalid
-                        ? 'text-red-500'
-                        : 'text-green-500'
-                    "
-                  >
-                    *
-                  </small>
+                <label for="sex" htmlFor="sex" class="font-medium text-900">
+                  Sexo
+                  <small [ngClass]="form.get('sex')?.invalid ? 'text-red-500' : 'text-green-500'">*</small>
                 </label>
                 <div class="p-input-icon-right">
                   <p-dropdown
@@ -570,45 +552,15 @@ interface DropType {
 
             <p-divider class="col-12" />
 
-            <footer class="grid mx-0 mt-4">
-              <div class="flex align-items-center col-12 gap-2">
-                <p-checkbox
-                  formControlName="newsReceive"
-                  [binary]="true"
-                  inputId="newsReceive"
-                />
-                <label for="newsReceive">Receber novidades por E-mail</label>
-              </div>
+                        <footer class="grid mx-0 mt-4">
               <div class="col-12 flex justify-content-center">
                 <p-button
-                  [disabled]="!form.valid"
+                  [disabled]="!form.valid || form.pending"
                   [loading]="isLoading()"
                   type="submit"
                   label="Criar seu Cadastro"
                   styleClass="font-bold"
                 />
-              </div>
-              <small
-                >* Ao clicar em "Criar seu cadastro" você nos autoriza efetuar
-                contato telefônico, por e-mail e via whatsapp.</small
-              >
-              <p-divider class="w-full my-1" align="center">
-                <span class="p-tag text-sm">ou</span>
-              </p-divider>
-
-              <div
-                class="flex align-items-center justify-content-center col-12 gap-2"
-              >
-                <small>
-                  Já tem um cadastro?
-                  <a
-                    [routerLink]="'/login'"
-                    class="text-bold text-sm text-red-600
-                    transition-all font-bold transition-duration-500 hover:text-red-400"
-                  >
-                    Entrar</a
-                  >.</small
-                >
               </div>
             </footer>
           </form>
@@ -624,22 +576,22 @@ export class RegisterPageComponent implements OnInit {
   private registerService = inject(RegisterService);
   private injector = inject(Injector);
 
-  registerFields: WritableSignal<RegisterType> = signal<RegisterType>(
-    new RegisterType()
-  );
+  registerFields: WritableSignal<RegisterType> = signal<RegisterType>(new RegisterType());
   isLoading = signal<boolean>(false);
 
-  weakExpression =
-    /^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})/;
+  weakExpression = /^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{6,})/;
   form: FormGroup;
-  sex: DropType[];
-  maritalStatus: DropType[];
-  isChecked = false;
+  sex: DropType[] = [
+    { name: 'Masculino', code: 'masculino' },
+    { name: 'Feminino', code: 'feminino' }
+  ];
+  maritalStatus: DropType[] = [
+    { name: 'Casado', code: 'casado' },
+    { name: 'Solteiro', code: 'solteiro' },
+    { name: 'Divorciado', code: 'divorciado' },
+    { name: 'União estável', code: 'uniaoStavel' }
+  ];
   currentDate = new Date();
-
-  dateYearFormat = new Intl.DateTimeFormat('pt-BR', {
-    year: 'numeric'
-  });
 
   ngOnInit(): void {
     this.configFormValues();
@@ -651,14 +603,14 @@ export class RegisterPageComponent implements OnInit {
       email: ['', [Validators.required, Validators.email, this.emailDomainValidator]],
       password: ['', Validators.required, this.customPasswordValidatorAsync.bind(this)],
       username: ['', Validators.required],
-      maritalStatus: [this.maritalStatus, Validators.required],
+      maritalStatus: [this.maritalStatus[0], Validators.required],
       cpf: ['', Validators.required, CPFGenericValidator.isValidCpfAsync()],
       rg: ['', Validators.required],
       birthDate: ['', Validators.required],
       phone: ['', Validators.required],
       phoneFixed: [''],
       cep: ['', Validators.required],
-      sex: [this.sex, Validators.required],
+      sex: [this.sex[0], Validators.required],
       city: [{ value: '', disabled: true }],
       country: [{ value: '', disabled: true }],
       address: ['', Validators.required],
@@ -681,22 +633,14 @@ export class RegisterPageComponent implements OnInit {
     return { invalidEmailDomain: true };
   }
 
-  customPasswordValidatorAsync(
-    control: AbstractControl
-  ): Promise<{ [key: string]: boolean } | null> {
+  customPasswordValidatorAsync(control: AbstractControl): Promise<{ [key: string]: boolean } | null> {
     return Promise.resolve(this.customPasswordValidator(control));
   }
-  customPasswordValidator(
-    control: AbstractControl
-  ): { [key: string]: boolean } | null {
+
+  customPasswordValidator(control: AbstractControl): { [key: string]: boolean } | null {
     const password = control.value;
     const regex = this.weakExpression;
-
-    if (!regex.test(password)) {
-      return { invalidPassword: true };
-    }
-
-    return null;
+    return !regex.test(password) ? { invalidPassword: true } : null;
   }
 
   setIbgeInformationsOnFields(): void {
@@ -707,9 +651,11 @@ export class RegisterPageComponent implements OnInit {
             city: ibgeRes.localidade,
             country: ibgeRes.uf
           });
-
-          this.form.controls['city'].enable();
-          this.form.controls['country'].enable();
+          this.form.get('city')?.enable();
+          this.form.get('country')?.enable();
+        } else {
+          this.form.get('city')?.setValue('');
+          this.form.get('country')?.setValue('');
         }
       }
     });
@@ -717,90 +663,59 @@ export class RegisterPageComponent implements OnInit {
 
   getCEPValue(): void {
     const cepValue = this.form.get('cep')?.value;
-
-    this.store.dispatch(
-      IbgeInformationActions.selectIbgeInfor({ value: cepValue })
-    );
+    this.store.dispatch(IbgeInformationActions.selectIbgeInfor({ value: cepValue }));
   }
 
   handleRegisterValues(): void {
-    effect(
-      () => {
-        if (
-          this.registerFields() &&
-          this.registerFields() !== new RegisterType()
-        ) {
-          this.registerService.registerUser(this.registerFields()).subscribe({
-            next: register => {
-              if (register) this.registerSuccess();
-            },
-            error: (err: HttpErrorResponse) => this.registerError(err)
-          });
-        }
-      },
-      { injector: this.injector }
-    );
+    effect(() => {
+      if (this.registerFields() && this.registerFields() !== new RegisterType()) {
+        this.registerService.registerUser(this.registerFields()).subscribe({
+          next: register => {
+            if (register) this.registerSuccess();
+          },
+          error: (err: HttpErrorResponse) => this.registerError(err)
+        });
+      }
+    }, { injector: this.injector });
   }
 
   registerError(err: HttpErrorResponse): void {
     if (err.status === 400) {
       this.isLoading.update(() => false);
-
       this.form.get('email')?.setErrors({ customError: true });
-      window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-      });
-      this.store.dispatch(
-        MessageAction.sendMessage({
-          message: {
-            severity: 'Error',
-            detail: err.error.message
-          }
-        })
-      );
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      this.store.dispatch(MessageAction.sendMessage({
+        message: { severity: 'Error', detail: err.error.message }
+      }));
     }
   }
 
   registerSuccess(): void {
     this.isLoading.update(() => false);
-    this.store.dispatch(
-      MessageAction.sendMessage({
-        message: {
-          severity: 'Success',
-          detail: 'Usuário registrado com sucesso'
-        }
-      })
-    );
+    this.store.dispatch(MessageAction.sendMessage({
+      message: { severity: 'Success', detail: 'Usuário registrado com sucesso' }
+    }));
     this.router.navigate(['/login']);
   }
 
-  formatData(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  formatDateToString(date: Date): string {
+    return formatDate(date, 'yyyy-MM-dd HH:mm:ss', 'en-US');
   }
 
   mountRegisterValues(registerMemberProps: FormGroup): RegisterType {
     const registerValue = registerMemberProps.value;
-    const formatDate = new FormatDate();
-  
-    const registerFormValue: RegisterType = {
+    
+    return {
       nome: registerValue.username,
       status: 1,
       email: registerValue.email,
-      sexo: registerValue.sex.name,
+      sexo: registerValue.sex?.name || '',
       cpf: registerValue.cpf,
       rg: registerValue.rg,
-      estadoCivil: registerValue.maritalStatus.name,
+      estadoCivil: registerValue.maritalStatus?.name || '',
       naturalidade: registerValue.birthCity,
       telefoneFixo: registerValue.phoneFixed,
-      dataNascimento: formatDate.formatDateToString(registerValue.birthDate),
+      dataNascimento: this.formatDateToString(registerValue.birthDate),
       celular: registerValue.phone,
       receberEmail: registerValue.newsReceive,
       cep: registerValue.cep,
@@ -811,15 +726,25 @@ export class RegisterPageComponent implements OnInit {
       cidade: registerValue.city,
       senha: registerValue.password
     };
-  
-    return registerFormValue;
   }
 
   onSubmit(createMemberProps: FormGroup): void {
-    const registerMemberDetails = this.mountRegisterValues(createMemberProps);
-
-    this.isLoading.update(() => true);
-    this.registerFields.update(() => registerMemberDetails);
-    this.handleRegisterValues();
+    console.log('Form Status:', this.form.status);
+    console.log('Form Errors:', this.form.errors);
+    
+    if (this.form.valid) {
+      const registerMemberDetails = this.mountRegisterValues(createMemberProps);
+      this.isLoading.update(() => true);
+      this.registerFields.update(() => registerMemberDetails);
+      this.handleRegisterValues();
+    } else {
+      console.error('Formulário inválido. Campos com erro:');
+      Object.keys(this.form.controls).forEach(key => {
+        const control = this.form.get(key);
+        if (control?.invalid) {
+          console.error(`Campo ${key}:`, control.errors);
+        }
+      });
+    }
   }
 }
