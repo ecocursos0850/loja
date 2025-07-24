@@ -188,62 +188,6 @@ interface DropType {
                 </div>
               </div>
 
-              <div class="field col-12 mb-4 flex flex-wrap" style="display: none !important">
-                <label
-                  for="fatherName"
-                  htmlFor="fatherName"
-                  class="font-medium text-900"
-                  >Nome do pai
-                  <small
-                    id="fatherName-help"
-                    [ngClass]="
-                      form.get('fatherName')?.invalid
-                        ? 'text-red-500'
-                        : 'text-green-500'
-                    "
-                  >
-                    *
-                  </small>
-                </label>
-                <div class="p-input-icon-left">
-                  <i class="pi pi-bookmark"></i>
-                  <input
-                    pInputText
-                    id="fatherName"
-                    class="p-inputtext p-component p-element"
-                    formControlName="fatherName"
-                  />
-                </div>
-              </div>
-
-              <div class="field col-12 mb-4 flex flex-wrap" style="display: none !important">
-                <label
-                  for="motherName"
-                  htmlFor="motherName"
-                  class="font-medium text-900"
-                  >Nome da mãe
-                  <small
-                    id="motherName-help"
-                    [ngClass]="
-                      form.get('motherName')?.invalid
-                        ? 'text-red-500'
-                        : 'text-green-500'
-                    "
-                  >
-                    *
-                  </small>
-                </label>
-                <div class="p-input-icon-left">
-                  <i class="pi pi-bookmark"></i>
-                  <input
-                    pInputText
-                    id="motherName"
-                    class="p-inputtext p-component p-element"
-                    formControlName="motherName"
-                  />
-                </div>
-              </div>
-
               <p-divider class="col-12" />
 
               <div class="field col-12 sm:col-3 mb-4 flex flex-wrap">
@@ -292,35 +236,6 @@ interface DropType {
                     type="text"
                     id="rg_input"
                     formControlName="rg"
-                  />
-                </div>
-              </div>
-
-              <div class="field col-12 sm:col-3 mb-4 flex flex-wrap" style="display: none !important">
-                <label
-                  for="issuingAuthority"
-                  htmlFor="issuingAuthority"
-                  class="font-medium text-900"
-                  >Orgão emissor
-                  <small
-                    id="issuingAuthority-help"
-                    [ngClass]="
-                      form.get('issuingAuthority')?.invalid
-                        ? 'text-red-500'
-                        : 'text-green-500'
-                    "
-                  >
-                    *
-                  </small>
-                </label>
-                <div class="p-input-icon-left">
-                  <i class="pi pi-bookmark"></i>
-                  <input
-                    pInputText
-                    type="text"
-                    id="issuingAuthority"
-                    class="p-inputtext p-component p-element"
-                    formControlName="issuingAuthority"
                   />
                 </div>
               </div>
@@ -650,64 +565,7 @@ interface DropType {
               </div>
 
               <p-divider class="col-12" />
-
-              <div class="field col-12 sm:col-9 mb-4 flex flex-wrap" style="display: none !important">
-                <label
-                  for="university"
-                  htmlFor="university"
-                  class="font-medium text-900"
-                  >Faculdade
-                  <small
-                    id="university-help"
-                    [ngClass]="
-                      form.get('university')?.invalid
-                        ? 'text-red-500'
-                        : 'text-green-500'
-                    "
-                  >
-                    *
-                  </small>
-                </label>
-                <div class="p-input-icon-left ">
-                  <i class="pi pi-book"></i>
-
-                  <input
-                    pInputText
-                    id="university"
-                    class="p-inputtext p-component p-element"
-                    formControlName="university"
-                  />
-                </div>
-              </div>
-
-              <div class="field col-12 md:col-3 mb-4" style="display: none !important">
-                <label
-                  for="endDate"
-                  htmlFor="endDate"
-                  class="font-medium text-900"
-                  >Ano de conclusão
-                  <small
-                    id="endDate-help"
-                    [ngClass]="
-                      form.get('endDate')?.invalid
-                        ? 'text-red-500'
-                        : 'text-green-500'
-                    "
-                  >
-                    *
-                  </small>
-                </label>
-                <div>
-                  <p-calendar
-                    formControlName="endDate"
-                    [showIcon]="true"
-                    view="year"
-                    dateFormat="yy"
-                    [readonlyInput]="true"
-                    [maxDate]="currentDate"
-                  />
-                </div>
-              </div>
+              
             </section>
 
             <p-divider class="col-12" />
@@ -790,22 +648,12 @@ export class RegisterPageComponent implements OnInit {
 
   configFormValues(): void {
     this.form = this.fb.group({
-      email: [
-        '',
-        [Validators.required, Validators.email, this.emailDomainValidator]
-      ],
-      password: [
-        '',
-        Validators.required,
-        this.customPasswordValidatorAsync.bind(this)
-      ],
+      email: ['', [Validators.required, Validators.email, this.emailDomainValidator]],
+      password: ['', Validators.required, this.customPasswordValidatorAsync.bind(this)],
       username: ['', Validators.required],
-      //fatherName: [''],
-      //motherName: ['', Validators.required],
       maritalStatus: [this.maritalStatus, Validators.required],
       cpf: ['', Validators.required, CPFGenericValidator.isValidCpfAsync()],
       rg: ['', Validators.required],
-      //issuingAuthority: ['', Validators.required],
       birthDate: ['', Validators.required],
       phone: ['', Validators.required],
       phoneFixed: [''],
@@ -818,21 +666,8 @@ export class RegisterPageComponent implements OnInit {
       houseNumber: ['', Validators.required],
       district: ['', Validators.required],
       complement: [''],
-      //university: [''],
-      //endDate: [''],
       newsReceive: [false]
     });
-
-    this.sex = [
-      { name: 'Masculino', code: 'masculino' },
-      { name: 'Feminino', code: 'feminino' }
-    ];
-    this.maritalStatus = [
-      { name: 'Casado', code: 'casado' },
-      { name: 'Solteiro', code: 'solteiro' },
-      { name: 'Divorciado', code: 'divorciado' },
-      { name: 'União estável', code: 'uniaoStavel' }
-    ];
   }
 
   emailDomainValidator(control: FormControl): any {
@@ -952,13 +787,9 @@ export class RegisterPageComponent implements OnInit {
   }
 
   mountRegisterValues(registerMemberProps: FormGroup): RegisterType {
-    console.log('Form Value:', registerMemberProps.value);
-    console.log('Form Valid:', registerMemberProps.valid);
-    console.log('Form Errors:', registerMemberProps.errors);
-    
     const registerValue = registerMemberProps.value;
     const formatDate = new FormatDate();
-
+  
     const registerFormValue: RegisterType = {
       nome: registerValue.username,
       status: 1,
@@ -967,12 +798,7 @@ export class RegisterPageComponent implements OnInit {
       cpf: registerValue.cpf,
       rg: registerValue.rg,
       estadoCivil: registerValue.maritalStatus.name,
-      //orgaoEmissor: registerValue.issuingAuthority,
-      //nomePai: registerValue.fatherName,
-      //nomeMae: registerValue.motherName,
       naturalidade: registerValue.birthCity,
-      //faculdade: registerValue.university,
-      //anoConclusao: this.dateYearFormat.format(registerValue.endDate),
       telefoneFixo: registerValue.phoneFixed,
       dataNascimento: formatDate.formatDateToString(registerValue.birthDate),
       celular: registerValue.phone,
@@ -985,7 +811,7 @@ export class RegisterPageComponent implements OnInit {
       cidade: registerValue.city,
       senha: registerValue.password
     };
-
+  
     return registerFormValue;
   }
 
