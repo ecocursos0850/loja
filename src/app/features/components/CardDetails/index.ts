@@ -69,7 +69,7 @@ import { DialogModule } from 'primeng/dialog';
                 </div>
                 <div class="flex gap-1">
                   <i class='text-red-600 pi pi-file'></i>
-                  <b>Conclusão em 6 meses</b>
+                  <b>Conclusão de 3 meses a 12 meses</b>
                 </div>
                 <div class="flex gap-1">
                   <i class='text-red-600 pi pi-home'></i>
