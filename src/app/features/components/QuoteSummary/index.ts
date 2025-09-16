@@ -172,6 +172,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   isPartner = signal<boolean>(false);
   availableHours = signal<number>(0);
   cartTotalHours = signal<number>(0);
+  isAllLawOnline = signal<boolean>(false);
 
   ngOnInit(): void {
     this.getCartData();
@@ -205,9 +206,14 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         // Verificar se é parceiro
         this.isPartner.set(userDetailsPartner !== null && userDetailsPartner !== undefined);
 
+        // Verificar se todos os cursos são DIREITO ONLINE (ID 3)
+        this.isAllLawOnline.set(items.every(item => item.categoria.id === 3));
+
         // Lógica corrigida para determinar se os cursos são gratuitos
+        // Só aplica se forem todos cursos DIREITO ONLINE (ID 3)
         this.hasFreeCourses.update(() => {
           return this.isPartner() && 
+                 this.isAllLawOnline() &&
                  this.availableHours() > 0 && 
                  this.cartTotalHours() <= this.availableHours();
         });
@@ -237,12 +243,6 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
         this.changeDetectorRef.markForCheck();
       }
-    );
-  }
-
-  isAllLawOnline(courses: CartType[]): boolean {
-    return courses.every(
-      course => course.categoria.titulo === 'DIREITO ONLINE'
     );
   }
 
