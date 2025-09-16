@@ -62,15 +62,21 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
       <div class="w-full ">
         <div class="w-full flex py-4 bg-amber-50 border border-amber-200 rounded-lg mb-4 shadow-sm">
           <div class="w-full flex items-center justify-center px-4">
-            <div class="w-full flex py-4 px-4 bg-red-50 border border-red-200 rounded-lg mb-4 items-center justify-center">
-              <i class="fa fa-exclamation-circle text-red-500 mr-3 text-lg"></i>
-              <p class="text-center font-medium text-red-800 text-sm">
-                <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
-              </p>
-              <p class="text-center font-medium text-green-800 text-sm m-0">
-                Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
-                <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
-              </p>              
+            <div class="w-full flex flex-column gap-3">
+              <div class="w-full flex py-4 px-4 bg-red-50 border border-red-200 rounded-lg items-center">
+                <i class="fa fa-exclamation-circle text-red-500 mr-3 text-lg"></i>
+                <p class="text-center font-medium text-red-800 text-sm m-0">
+                  <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
+                </p>
+              </div>
+              
+              <div class="w-full flex py-4 px-4 bg-amber-50 border border-amber-200 rounded-lg items-center">
+                <i class="fa fa-info-circle text-amber-500 mr-3 text-lg"></i>
+                <p class="text-center font-medium text-amber-800 text-sm m-0">
+                  Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
+                  <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
+                </p>              
+              </div>
             </div>
           </div>
         </div>
