@@ -62,36 +62,22 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
     >
       <div class="w-full ">
         <div class="w-full flex py-4 bg-amber-50 border border-amber-200 rounded-lg mb-4 shadow-sm">
-          <div class="w-full flex flex-column items-center justify-center px-4 py-3">
-            <div class="w-full flex items-center justify-center mb-2">
-              <i class="fa fa-exclamation-circle text-red-500 mr-3 text-lg"></i>
-              <p class="text-center font-medium text-red-800 text-sm m-0">
-                <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
-              </p>
-            </div>
-            
-            <!-- Nova mensagem para parceiros -->
-            <div *ngIf="isPartner() && partnerName() && availableHours() > 0" 
-                 class="w-full flex items-center justify-center mt-2 pt-2 border-t border-amber-300">
-              <i class="fa fa-gift text-green-500 mr-3 text-lg"></i>
-              <p class="text-center font-medium text-green-800 text-sm m-0">
-                Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
-                <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
-              </p>
-            </div>
-
-            <!-- Mensagem sobre horas gratuitas -->
-            <div *ngIf="isPartner() && availableHours() > 0" 
-                 class="w-full flex items-center justify-center mt-2">
-              <i class="fa fa-info-circle text-blue-500 mr-2"></i>
-              <p class="text-center font-medium text-blue-800 text-xs m-0">
-                <span *ngIf="hasEnoughHours(); else insufficientHours">
-                  Suas horas gratuitas cobrem totalmente estes cursos! Valor final: <strong>R$ 0,00</strong>
-                </span>
-                <ng-template #insufficientHours>
-                  Suas horas gratuitas cobrem parcialmente estes cursos. Valor a pagar: <strong>{{ calculateFinalValue() | currency }}</strong>
-                </ng-template>
-              </p>
+          <div class="w-full flex items-center justify-center px-4">
+            <div class="w-full flex flex-column py-4 px-4 bg-red-50 border border-red-200 rounded-lg mb-4 items-center justify-center">
+              <div class="flex items-center justify-center mb-2">
+                <i class="fa fa-exclamation-circle text-red-500 mr-3 text-lg"></i>
+                <p class="text-center font-medium text-red-800 text-sm m-0">
+                  <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
+                </p>
+              </div>
+              
+              <div *ngIf="isPartner() && partnerName() && availableHours() > 0" class="flex items-center justify-center mt-2 pt-2 border-t border-red-300">
+                <i class="fa fa-gift text-green-500 mr-3 text-lg"></i>
+                <p class="text-center font-medium text-green-800 text-sm m-0">
+                  Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
+                  <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -167,7 +153,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
             </tr>
           </ng-template>
           <ng-template pTemplate="summary">
-            <div class=" flex flex-wrap flex-row justify-content-end gap-3">
+            <div class="flex flex-wrap flex-row justify-content-end gap-3">
               <div
                 class="flex line-height-4 font-normal
                 flex-column align-items-start md:align-items-end
@@ -296,22 +282,17 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   partnerName = signal<string>('');
   isPartner = signal<boolean>(false);
 
-  // Novo computed para verificar se há horas suficientes
+  // Computed property para verificar se há horas suficientes
   hasEnoughHours = computed(() => {
     return this.isPartner() && this.availableHours() >= this.totalHours();
   });
 
-  // Novo computed para calcular o valor final considerando horas gratuitas
-  finalValueWithHours = computed(() => {
-    if (this.isPartner() && this.hasEnoughHours()) {
+  // Computed property para calcular o valor final
+  finalOrderValue = computed(() => {
+    if (this.hasEnoughHours()) {
       return 0; // Valor zero se horas suficientes
-    } else if (this.isPartner()) {
-      // Aplica desconto normal se for parceiro mas horas insuficientes
-      return this.cartSubTotalPrice() - (this.cartSubTotalPrice() * this.discountPercent());
-    } else {
-      // Valor normal para não-parceiros
-      return this.cartSubTotalPrice();
     }
+    return this.cartSubTotalPrice() - this.discountValue();
   });
 
   ngOnInit(): void {
@@ -398,14 +379,10 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
   calculateFinalValueItem(price: number): number {
-    if (this.isPartner() && this.hasEnoughHours()) {
+    if (this.hasEnoughHours()) {
       return 0; // Valor zero se horas suficientes
     }
     return price - price * (this.isPartner() ? this.discountPercent() : 0);
-  }
-
-  calculateFinalValue(): number {
-    return this.finalValueWithHours();
   }
 
   isAllLawOnline(courses: CartType[]): boolean {
@@ -431,9 +408,8 @@ export class CartPageComponent implements OnInit, AfterContentInit {
           : [0],
       subtotal: this.cartSubTotalPrice(),
       descontos: this.isPartner() ? this.discountValue() : 0,
-      isento:
-        this.isPartner() && this.hasEnoughHours() ? 1 : 0,
-      taxaMatricula: this.hasEnoughHours() ? 0 : 50 // Isenta taxa de matrícula se for gratuito
+      isento: this.hasEnoughHours() ? 1 : 0,
+      taxaMatricula: this.hasEnoughHours() ? 0 : 50
     };
 
     console.log('***', mock);
