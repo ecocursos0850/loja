@@ -63,12 +63,12 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
       <div class="w-full ">
         <div class="w-full flex py-4 bg-amber-50 border border-amber-200 rounded-lg mb-4 shadow-sm">
           <div class="w-full flex items-center justify-center px-4">
-            <svg class="flex-shrink-0 w-5 h-5 text-amber-500 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9z" clip-rule="evenodd"></path>
-            </svg>
-            <p class="text-center font-medium text-amber-800 text-sm leading-tight">
-              <span class="font-semibold">Atenção:</span> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
-            </p>
+            <div class="w-full flex py-4 px-4 bg-red-50 border border-red-200 rounded-lg mb-4 items-center justify-center">
+              <i class="fa fa-exclamation-circle text-red-500 mr-3 text-lg"></i>
+              <p class="text-center font-medium text-red-800 text-sm">
+                <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
+              </p>
+            </div>
           </div>
         </div>
 
