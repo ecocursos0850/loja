@@ -69,7 +69,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
               </p>
               <p class="text-center font-medium text-green-800 text-sm m-0">
-                Você é filiado ao parceiro <strong>{{ partnerName }}</strong> e possui 
+                Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
                 <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
               </p>              
             </div>
