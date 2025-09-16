@@ -63,21 +63,15 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
       <div class="w-full ">
         <div class="w-full flex py-4 bg-amber-50 border border-amber-200 rounded-lg mb-4 shadow-sm">
           <div class="w-full flex items-center justify-center px-4">
-            <div class="w-full flex flex-column py-4 px-4 bg-red-50 border border-red-200 rounded-lg mb-4 items-center justify-center">
-              <div class="flex items-center justify-center mb-2">
-                <i class="fa fa-exclamation-circle text-red-500 mr-3 text-lg"></i>
-                <p class="text-center font-medium text-red-800 text-sm m-0">
-                  <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
-                </p>
-              </div>
-              
-              <div *ngIf="isPartner() && partnerName() && availableHours() > 0" class="flex items-center justify-center mt-2 pt-2 border-t border-red-300">
-                <i class="fa fa-gift text-green-500 mr-3 text-lg"></i>
-                <p class="text-center font-medium text-green-800 text-sm m-0">
-                  Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
-                  <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
-                </p>
-              </div>
+            <div class="w-full flex py-4 px-4 bg-red-50 border border-red-200 rounded-lg mb-4 items-center justify-center">
+              <i class="fa fa-exclamation-circle text-red-500 mr-3 text-lg"></i>
+              <p class="text-center font-medium text-red-800 text-sm">
+                <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
+              </p>
+              <p class="text-center font-medium text-green-800 text-sm m-0">
+                Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
+                <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
+              </p>              
             </div>
           </div>
         </div>
@@ -153,7 +147,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
             </tr>
           </ng-template>
           <ng-template pTemplate="summary">
-            <div class="flex flex-wrap flex-row justify-content-end gap-3">
+            <div class=" flex flex-wrap flex-row justify-content-end gap-3">
               <div
                 class="flex line-height-4 font-normal
                 flex-column align-items-start md:align-items-end
@@ -282,19 +276,6 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   partnerName = signal<string>('');
   isPartner = signal<boolean>(false);
 
-  // Computed property para verificar se há horas suficientes
-  hasEnoughHours = computed(() => {
-    return this.isPartner() && this.availableHours() >= this.totalHours();
-  });
-
-  // Computed property para calcular o valor final
-  finalOrderValue = computed(() => {
-    if (this.hasEnoughHours()) {
-      return 0; // Valor zero se horas suficientes
-    }
-    return this.cartSubTotalPrice() - this.discountValue();
-  });
-
   ngOnInit(): void {
     this.getStateDataValues();
   }
@@ -335,6 +316,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
               return res.parceiro && res.parceiro.isParceiro;
             });
             
+            // Adicionar esta linha para obter o nome do parceiro
             if (res.parceiro && res.parceiro.nome) {
               this.partnerName.set(res.parceiro.nome);
             }
@@ -379,9 +361,6 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
   calculateFinalValueItem(price: number): number {
-    if (this.hasEnoughHours()) {
-      return 0; // Valor zero se horas suficientes
-    }
     return price - price * (this.isPartner() ? this.discountPercent() : 0);
   }
 
@@ -391,29 +370,33 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     );
   }
 
-  closeOrder(): void {
-    const mock: OrderModel = {
-      aluno: {
-        id: this.userId
-      },
-      cursos: this.items.map(res => {
-        return { id: res.id };
-      }),
-      status: 1,
-      tipoPagamentos:
-        !this.isAllLawOnline(this.items) ||
-        !this.isPartner() ||
-        this.totalHours() > this.availableHours()
-          ? [1, 2, 3]
-          : [0],
-      subtotal: this.cartSubTotalPrice(),
-      descontos: this.isPartner() ? this.discountValue() : 0,
-      isento: this.hasEnoughHours() ? 1 : 0,
-      taxaMatricula: this.hasEnoughHours() ? 0 : 50
-    };
+ closeOrder(): void {
+  //this.disabledButton.set(true);
+  const mock: OrderModel = {
+    aluno: {
+      id: this.userId
+    },
+    cursos: this.items.map(res => {
+      return { id: res.id };
+    }),
+    status: 1,
+    tipoPagamentos:
+      !this.isAllLawOnline(this.items) ||
+      !this.isPartner() ||
+      this.totalHours() > this.availableHours()
+        ? [1, 2, 3]
+        : [0],
+    subtotal: this.cartSubTotalPrice(),
+    descontos: this.isPartner() ? this.discountValue() : 0, // Ajuste aqui
+    isento:
+      this.isPartner() &&
+      (this.totalHours() <= this.availableHours()) ? 1 : 0, // Ajuste aqui
+    taxaMatricula: 50
+  };
 
-    console.log('***', mock);
+  console.log('***', mock);
 
-    this.store.dispatch(OrderActions.selectOrder({ order: mock }));
-  }
+  this.store.dispatch(OrderActions.selectOrder({ order: mock }));
 }
+}
+
