@@ -397,8 +397,8 @@ export class CartPageComponent implements OnInit, AfterContentInit {
       subtotal: this.cartSubTotalPrice(),
       descontos: this.hasFreeCourses() ? this.cartSubTotalPrice() : (this.isPartner() ? this.discountValue() : 0),
       isento: this.hasFreeCourses() ? 1 : 0,
-      taxaMatricula: this.hasFreeCourses() ? 0 : 50,
-      total: this.hasFreeCourses() ? 0 : this.cartSubTotalPrice() - (this.isPartner() ? this.discountValue() : 0)
+      taxaMatricula: this.hasFreeCourses() ? 0 : 50
+      // Removida a propriedade 'total' que não existe no OrderModel
     };
 
     console.log('Pedido a ser enviado:', mock);
