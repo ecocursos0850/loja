@@ -68,6 +68,10 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
               <p class="text-center font-medium text-red-800 text-sm">
                 <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
               </p>
+              <p class="text-center font-medium text-green-800 text-sm m-0">
+                Você é filiado ao parceiro <strong>{{ partnerName }}</strong> e possui 
+                <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
+              </p>              
             </div>
           </div>
         </div>
@@ -269,6 +273,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     () => this.cartSubTotalPrice() * this.discountPercent()
   );
 
+  partnerName = signal<string>('');
   isPartner = signal<boolean>(false);
 
   ngOnInit(): void {
@@ -302,25 +307,32 @@ export class CartPageComponent implements OnInit, AfterContentInit {
         this.items = cartItems;
         this.totalHours.update(() => cartTotalHours);
         this.cartSubTotalPrice.update(() => cartSubTotalPrice);
-
-        if (userDetails)
+  
+        if (userDetails) {
           userDetails.forEach(res => {
             this.userId = res.id;
             this.availableHours.set(res.horasDisponiveis);
             this.isPartner.update(() => {
               return res.parceiro && res.parceiro.isParceiro;
             });
+            
+            // Adicionar esta linha para obter o nome do parceiro
+            if (res.parceiro && res.parceiro.nome) {
+              this.partnerName.set(res.parceiro.nome);
+            }
           });
-
+        }
+  
         this.discountPercent.update(() => {
           return this.isAllLawOnline(cartItems) &&
             !(this.totalHours() > this.availableHours())
             ? 1
             : Number(userDetailsDiscount) / 100;
         });
-
-        if (checkoutTotalPayment)
+  
+        if (checkoutTotalPayment) {
           this.totalFinalValue.update(() => checkoutTotalPayment);
+        }
       }
     );
   }
