@@ -130,7 +130,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
               {{ discountPercent() ? '-' : (discountPercent() * 100 + '%') }}
               </td>
               <td class="font-bold">
-                {{ calculateFinalValueItem(item.preco) | currency }}
+                {{ calculateFinalValueItem(item.preco, item.cargaHoraria) | currency }}
               </td>
               <td class="col-1">
                 <p-confirmPopup />
@@ -275,6 +275,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
 
   partnerName = signal<string>('');
   isPartner = signal<boolean>(false);
+  hasFreeCourses = signal<boolean>(false);
 
   ngOnInit(): void {
     this.getStateDataValues();
@@ -316,18 +317,19 @@ export class CartPageComponent implements OnInit, AfterContentInit {
               return res.parceiro && res.parceiro.isParceiro;
             });
             
-            // Adicionar esta linha para obter o nome do parceiro
             if (res.parceiro && res.parceiro.nome) {
               this.partnerName.set(res.parceiro.nome);
             }
           });
         }
   
+        // Verificar se os cursos são gratuitos com base nas horas disponíveis
+        this.hasFreeCourses.update(() => {
+          return this.isPartner() && this.totalHours() <= this.availableHours();
+        });
+  
         this.discountPercent.update(() => {
-          return this.isAllLawOnline(cartItems) &&
-            !(this.totalHours() > this.availableHours())
-            ? 1
-            : Number(userDetailsDiscount) / 100;
+          return this.hasFreeCourses() ? 1 : Number(userDetailsDiscount) / 100;
         });
   
         if (checkoutTotalPayment) {
@@ -360,7 +362,10 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     return CourseTypeEnum[type];
   }
 
-  calculateFinalValueItem(price: number): number {
+  calculateFinalValueItem(price: number, courseHours: number): number {
+    if (this.hasFreeCourses()) {
+      return 0; // Curso gratuito
+    }
     return price - price * (this.isPartner() ? this.discountPercent() : 0);
   }
 
@@ -370,33 +375,29 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     );
   }
 
- closeOrder(): void {
-  //this.disabledButton.set(true);
-  const mock: OrderModel = {
-    aluno: {
-      id: this.userId
-    },
-    cursos: this.items.map(res => {
-      return { id: res.id };
-    }),
-    status: 1,
-    tipoPagamentos:
-      !this.isAllLawOnline(this.items) ||
-      !this.isPartner() ||
-      this.totalHours() > this.availableHours()
-        ? [1, 2, 3]
-        : [0],
-    subtotal: this.cartSubTotalPrice(),
-    descontos: this.isPartner() ? this.discountValue() : 0, // Ajuste aqui
-    isento:
-      this.isPartner() &&
-      (this.totalHours() <= this.availableHours()) ? 1 : 0, // Ajuste aqui
-    taxaMatricula: 50
-  };
+  closeOrder(): void {
+    const mock: OrderModel = {
+      aluno: {
+        id: this.userId
+      },
+      cursos: this.items.map(res => {
+        return { id: res.id };
+      }),
+      status: 1,
+      tipoPagamentos:
+        !this.isAllLawOnline(this.items) ||
+        !this.isPartner() ||
+        this.totalHours() > this.availableHours()
+          ? [1, 2, 3]
+          : [0],
+      subtotal: this.cartSubTotalPrice(),
+      descontos: this.isPartner() ? this.discountValue() : 0,
+      isento: this.hasFreeCourses() ? 1 : 0,
+      taxaMatricula: this.hasFreeCourses() ? 0 : 50 // Taxa de matrícula também gratuita se cursos forem gratuitos
+    };
 
-  console.log('***', mock);
+    console.log('***', mock);
 
-  this.store.dispatch(OrderActions.selectOrder({ order: mock }));
+    this.store.dispatch(OrderActions.selectOrder({ order: mock }));
+  }
 }
-}
-
