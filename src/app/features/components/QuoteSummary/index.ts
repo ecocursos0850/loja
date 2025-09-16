@@ -77,13 +77,20 @@ import { CouponComponent } from '../Coupon';
           >
           <span>{{ totalPrice() | currency }}</span>
         </div>
+        
+        <div *ngIf="hasFreeCourses()" class="line-height-4 flex justify-content-between text-green-600">
+          <strong>Desconto Parceiro (Horas Gratuitas)</strong>
+          <span>-100%</span>
+        </div>
+        
         <div
+          *ngIf="!hasFreeCourses()"
           [ngClass]="hasFreeCourses() ? 'text-gray-400' : ''"
           class="line-height-4 flex justify-content-between"
         >
           <strong>Descontos</strong>
           <span>
-            {{ discountPercent() ? '-' : '' }}
+            {{ discountPercent() > 0 ? '-' : '' }}
             {{ discountPercent() | percent }}</span
           >
         </div>
@@ -123,7 +130,7 @@ import { CouponComponent } from '../Coupon';
         [ngClass]="hasFreeCourses() ? 'text-gray-400' : ''"
         class="flex justify-content-between"
       >
-        <strong> Cupom de deconto </strong>
+        <strong> Cupom de desconto </strong>
         <span>- {{ couponDiscount()?.valor }} %</span>
       </div>
     </ng-template>
@@ -138,7 +145,7 @@ import { CouponComponent } from '../Coupon';
         styleClass="pl-0"
         icon="pi pi-ticket"
         pRipple
-        label="Inserir cupom de desconto {{ couponDiscount()?.valor }}"
+        label="Inserir cupom de desconto"
       >
       </p-button>
     </ng-template>
@@ -162,6 +169,9 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   disabledCouponButton = signal<boolean>(false);
   discountPercent = signal<number>(0);
   hasFreeCourses = signal<boolean>(false);
+  isPartner = signal<boolean>(false);
+  availableHours = signal<number>(0);
+  cartTotalHours = signal<number>(0);
 
   ngOnInit(): void {
     this.getCartData();
@@ -189,15 +199,17 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
       ]) => {
         this.totalPrice.update(() => totalPrice);
         this.totalItems.set(items.length);
+        this.availableHours.set(availableHours || 0);
+        this.cartTotalHours.set(cartTotalHours);
 
+        // Verificar se é parceiro
+        this.isPartner.set(userDetailsPartner !== null && userDetailsPartner !== undefined);
+
+        // Lógica corrigida para determinar se os cursos são gratuitos
         this.hasFreeCourses.update(() => {
-          return this.totalPrice() === 0 ||
-            (this.isAllLawOnline(items) &&
-              userDetailsPartner &&
-              availableHours &&
-              cartTotalHours < availableHours)
-            ? true
-            : false;
+          return this.isPartner() && 
+                 this.availableHours() > 0 && 
+                 this.cartTotalHours() <= this.availableHours();
         });
 
         if (coupon) {
@@ -209,22 +221,21 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         this.discountPercent.update(() => {
           return this.hasFreeCourses() ? 1 : Number(discountPercent) / 100;
         });
-        var valor = 0;
 
-        if (Number((this.totalPrice() * this.couponDiscount()?.valor ) / 100 ?? 0) != undefined) {
-          valor = Number((this.totalPrice() * this.couponDiscount()?.valor ) / 100 ?? 0);
-        }
+        const couponValue = this.couponDiscount()?.valor || 0;
+        const couponDiscountAmount = Number((this.totalPrice() * couponValue) / 100) || 0;
 
         this.calculateTotalPayment(
           this.totalPrice(),
-          isNaN(valor) ? 0 : valor,
-          this.discountPercent() ?? 0
+          couponDiscountAmount,
+          this.discountPercent()
         );
+        
         this.store.dispatch(
           CheckoutActions.selectTotalPayment({ total: this.total() })
         );
 
-        this.changeDetectorRef.detectChanges();
+        this.changeDetectorRef.markForCheck();
       }
     );
   }
@@ -258,19 +269,20 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
   private calculateTotalPayment(
     total: number,
-    discount: number,
+    couponDiscount: number,
     discountPercent: number
   ): void {
-    console.log(total);
-    console.log(discount);
-    console.log(discountPercent);
-    this.total.update(() => {
-      const decreaseTotal = total - discount;
-      console.log("A " + decreaseTotal);
-      console.log(decreaseTotal - decreaseTotal * discountPercent);
-      return decreaseTotal - decreaseTotal * discountPercent;
-    });
-    console.log(this.total());
+    if (this.hasFreeCourses()) {
+      // Se os cursos são gratuitos, total = 0
+      this.total.set(0);
+      return;
+    }
+
+    // Cálculo normal para quando não são gratuitos
+    const priceAfterCoupon = total - couponDiscount;
+    const finalPrice = priceAfterCoupon - (priceAfterCoupon * discountPercent);
+    
+    this.total.set(Math.max(0, finalPrice)); // Garante que não seja negativo
   }
 
   ngOnDestroy(): void {
