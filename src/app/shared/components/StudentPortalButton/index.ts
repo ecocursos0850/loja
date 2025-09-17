@@ -85,7 +85,14 @@ export class StudentPortalButtonComponent implements OnInit {
         this.goToPedidos();
       }
     },
-     {
+    {
+     label: 'Certificados',
+     icon: 'pi pi-file',
+     command: () => {
+       this.goToCertificado();
+     }
+   },
+    {
       label: 'Simulados',
       icon: 'pi pi-question',
       command: () => {
@@ -142,7 +149,7 @@ export class StudentPortalButtonComponent implements OnInit {
   }
   
   goToCursos(): void {
-    let url = Constants.portalLink + "/meus-cursos";
+    let url = "https://login.ecocursos.com.br/portal/aluno/meus-cursos";
 
     if(localStorage.getItem('token') != null) {
       url = url + "?token=" + localStorage.getItem('token')?.toString();
@@ -152,7 +159,7 @@ export class StudentPortalButtonComponent implements OnInit {
   }
   
   goToPedidos(): void {
-    let url = Constants.portalLink + "/meus-pedidos";
+    let url = "https://login.ecocursos.com.br/portal/aluno/meus-pedidos";
 
     if(localStorage.getItem('token') != null) {
       url = url + "?token=" + localStorage.getItem('token')?.toString();
@@ -162,7 +169,17 @@ export class StudentPortalButtonComponent implements OnInit {
   }
   
   goToPerfil(): void {
-    let url = Constants.portalLink + "/meus-dados";
+    let url = "https://login.ecocursos.com.br/portal/aluno/meus-dados";
+
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
+    }
+
+    window.open(url, '_parent');
+  }
+  
+  goToCertificado(): void {
+    let url = "https://login.ecocursos.com.br/portal/aluno/certificados";
 
     if(localStorage.getItem('token') != null) {
       url = url + "?token=" + localStorage.getItem('token')?.toString();
