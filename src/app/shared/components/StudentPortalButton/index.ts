@@ -12,8 +12,6 @@ import { ButtonModule } from 'primeng/button';
 
 import { Constants } from '../../utils/constants/index';
 
-import { Router } from '@angular/router';
-
 @Component({
   selector: 'app-student-portal-button',
   standalone: true,
@@ -119,7 +117,6 @@ export class StudentPortalButtonComponent implements OnInit {
   ];
 
   private store = inject(Store);
-  private router = inject(Router);
   
   ngOnInit(): void {
     this.getUserName();
