@@ -179,7 +179,13 @@ export class StudentPortalButtonComponent implements OnInit {
   }
   
   goToPerfil(): void {
-    this.router.navigate(['/portal/aluno/meus-dados']);
+    let url = "https://login.ecocursos.com.br/portal/aluno/meus-dados";
+    
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
+    }
+  
+    window.location.href = url; // Usar href em vez de open
   }
   
   goToCertificado(): void {
