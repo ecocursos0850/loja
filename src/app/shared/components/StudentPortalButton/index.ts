@@ -74,34 +74,6 @@ export class StudentPortalButtonComponent implements OnInit {
       }
     },
     {
-      label: 'Meu Perfil',
-      icon: 'pi pi-user',
-      command: () => {
-        this.goToPerfil();
-      }
-    },
-    {
-      label: 'Meus cursos',
-      icon: 'pi pi-folder',
-      command: () => {
-        this.goToCursos();
-      }
-    },
-    {
-      label: 'Meus pedidos',
-      icon: 'pi pi-shopping-cart',
-      command: () => {
-        this.goToPedidos();
-      }
-    },
-    {
-     label: 'Certificados',
-     icon: 'pi pi-file',
-     command: () => {
-       this.goToCertificado();
-     }
-   },
-    {
       label: 'Simulados',
       icon: 'pi pi-question',
       command: () => {
