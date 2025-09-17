@@ -65,15 +65,15 @@ export class StudentPortalButtonComponent implements OnInit {
   firstName = '';
   items = [
     {
-      label: 'Portal do aluno',
+      label: 'Portal do Auno',
       icon: 'pi pi-home',
       command: () => {
         this.goToPortal();
       }
     },
     {
-      label: 'Meu perfil',
-      icon: 'pi pi-file-edit',
+      label: 'Meu Perfil',
+      icon: 'pi pi-user',
       command: () => {
         this.goToPerfil();
       }
@@ -92,7 +92,14 @@ export class StudentPortalButtonComponent implements OnInit {
         this.goToPedidos();
       }
     },
-     {
+    {
+     label: 'Certificados',
+     icon: 'pi pi-file',
+     command: () => {
+       this.goToCertificado();
+     }
+   },
+    {
       label: 'Simulados',
       icon: 'pi pi-question',
       command: () => {
@@ -110,7 +117,7 @@ export class StudentPortalButtonComponent implements OnInit {
   ];
 
   private store = inject(Store);
-
+  
   ngOnInit(): void {
     this.getUserName();
   }
@@ -134,79 +141,61 @@ export class StudentPortalButtonComponent implements OnInit {
     window.open(url, '_parent');
   }
 
-  goToSimulados() {
+    goToSimulados() {
     window.location.href = 'https://ecocursos.com.br/simulados';
   }
   
   goToPortal(): void {
     let url = Constants.portalLink;
 
-    // Verificar token em ambos os locais
-    const token = localStorage.getItem('token') || this.getTokenFromSessionStorage();
-    
-    if(token) {
-      url = url + "?token=" + token;
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
     }
 
-    window.location.href = url;
+    window.open(url, '_parent');
   }
   
   goToCursos(): void {
     let url = "https://login.ecocursos.com.br/portal/aluno/meus-cursos";
 
-    // Verificar token em ambos os locais
-    const token = localStorage.getItem('token') || this.getTokenFromSessionStorage();
-    
-    if(token) {
-      url = url + "?token=" + token;
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
     }
 
-    window.location.href = url;
+    window.open(url, '_parent');
   }
   
   goToPedidos(): void {
     let url = "https://login.ecocursos.com.br/portal/aluno/meus-pedidos";
 
-    // Verificar token em ambos os locais
-    const token = localStorage.getItem('token') || this.getTokenFromSessionStorage();
-    
-    if(token) {
-      url = url + "?token=" + token;
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
     }
 
-    window.location.href = url;
+    window.open(url, '_parent');
   }
   
   goToPerfil(): void {
     let url = "https://login.ecocursos.com.br/portal/aluno/meus-dados";
     
-    // Verificar token em ambos os locais
-    const token = localStorage.getItem('token') || this.getTokenFromSessionStorage();
-    
-    if(token) {
-      url = url + "?token=" + token;
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
     }
   
-    window.location.href = url; 
+    window.location.href = url; // Usar href em vez de open
   }
+  
+  goToCertificado(): void {
+    let url = "https://login.ecocursos.com.br/portal/aluno/certificados";
 
-  // Método auxiliar para extrair token do sessionStorage
-  private getTokenFromSessionStorage(): string | null {
-    const authHeader = sessionStorage.getItem('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      return authHeader.substring(7); // Remove 'Bearer ' do início
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
     }
-    return null;
+
+    window.open(url, '_parent');
   }
 
   handleLogout(): void {
-    // Limpar ambos os storages no logout
-    localStorage.removeItem('token');
-    sessionStorage.removeItem('Authorization');
-    sessionStorage.removeItem('tipo');
-    sessionStorage.removeItem('id');
-    sessionStorage.removeItem('idUser');
-    
     this.store.dispatch(LoginActions.logout());
   }
 }
