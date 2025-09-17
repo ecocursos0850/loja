@@ -141,10 +141,10 @@ export class StudentPortalButtonComponent implements OnInit {
     const hostname = window.location.origin;
     let url = `${hostname}/login`;
 
-    window.open(url, '_parent');
+    window.location.href = url;
   }
 
-    goToSimulados() {
+  goToSimulados() {
     window.location.href = 'https://ecocursos.com.br/simulados';
   }
   
@@ -155,7 +155,7 @@ export class StudentPortalButtonComponent implements OnInit {
       url = url + "?token=" + localStorage.getItem('token')?.toString();
     }
 
-    window.open(url, '_parent');
+    window.location.href = url;
   }
   
   goToCursos(): void {
@@ -165,7 +165,7 @@ export class StudentPortalButtonComponent implements OnInit {
       url = url + "?token=" + localStorage.getItem('token')?.toString();
     }
 
-    window.open(url, '_parent');
+    window.location.href = url;
   }
   
   goToPedidos(): void {
@@ -175,7 +175,7 @@ export class StudentPortalButtonComponent implements OnInit {
       url = url + "?token=" + localStorage.getItem('token')?.toString();
     }
 
-    window.open(url, '_parent');
+    window.location.href = url;
   }
   
   goToPerfil(): void {
@@ -195,7 +195,7 @@ export class StudentPortalButtonComponent implements OnInit {
       url = url + "?token=" + localStorage.getItem('token')?.toString();
     }
 
-    window.open(url, '_parent');
+    window.location.href = url;
   }
 
   handleLogout(): void {
