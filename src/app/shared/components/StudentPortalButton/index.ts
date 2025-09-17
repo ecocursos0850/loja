@@ -65,8 +65,8 @@ export class StudentPortalButtonComponent implements OnInit {
   firstName = '';
   items = [
     {
-      label: 'Meu código',
-      icon: 'pi pi-file-edit',
+      label: 'Portal do Auno',
+      icon: 'pi pi-home',
       command: () => {
         this.goToPortal();
       }
@@ -75,14 +75,14 @@ export class StudentPortalButtonComponent implements OnInit {
       label: 'Meus cursos',
       icon: 'pi pi-folder',
       command: () => {
-        this.goToPortal();
+        this.goToCursos();
       }
     },
     {
       label: 'Meus pedidos',
       icon: 'pi pi-shopping-cart',
       command: () => {
-        this.goToPortal();
+        this.goToPedidos();
       }
     },
      {
@@ -133,6 +133,36 @@ export class StudentPortalButtonComponent implements OnInit {
   
   goToPortal(): void {
     let url = Constants.portalLink;
+
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
+    }
+
+    window.open(url, '_parent');
+  }
+  
+  goToCursos(): void {
+    let url = Constants.portalLink + "/meus-cursos";
+
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
+    }
+
+    window.open(url, '_parent');
+  }
+  
+  goToPedidos(): void {
+    let url = Constants.portalLink + "/meus-pedidos";
+
+    if(localStorage.getItem('token') != null) {
+      url = url + "?token=" + localStorage.getItem('token')?.toString();
+    }
+
+    window.open(url, '_parent');
+  }
+  
+  goToPerfil(): void {
+    let url = Constants.portalLink + "/meus-dados";
 
     if(localStorage.getItem('token') != null) {
       url = url + "?token=" + localStorage.getItem('token')?.toString();
