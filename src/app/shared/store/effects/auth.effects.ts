@@ -60,7 +60,7 @@ export class AuthEffect {
               user: loginData
             });
           }),
-          tap((result) => {
+          tap(() => {
             this.store.dispatch(LoadingAction.loading({ message: false }));
             this.store.dispatch(
               MessageAction.sendMessage({
@@ -71,17 +71,9 @@ export class AuthEffect {
               })
             );
 
-            // Verificar se é um usuário do tipo 'USER' e redirecionar para o portal do aluno
-            if (result.user && result.user.tipo === 'USER') {
-              // Construir a URL do portal do aluno com o token
-              const portalUrl = this.buildPortalAlunoUrl(result.user.access_token);
-              window.location.href = portalUrl;
-            } else {
-              // Redirecionamento padrão para outros tipos de usuário
-              const urlContent = this.authService.getRedirectUrl();
-              if (urlContent) this.router.navigate([urlContent]);
-              else this.router.navigate(['']);
-            }
+            const urlContent = this.authService.getRedirectUrl();
+            if (urlContent) this.router.navigate([urlContent]);
+            else this.router.navigate(['']);
           }),
           catchError((err: HttpErrorResponse): Observable<any> => {
             this.store.dispatch(LoadingAction.loading({ message: false }));
@@ -112,13 +104,6 @@ export class AuthEffect {
           }),
           tap(() => {
             this.store.dispatch(UserDetailsActions.clear());
-            // Limpar ambos os storages no logout
-            localStorage.removeItem('token');
-            sessionStorage.removeItem('Authorization');
-            sessionStorage.removeItem('tipo');
-            sessionStorage.removeItem('id');
-            sessionStorage.removeItem('idUser');
-            
             window.location.replace('');
           }),
           catchError((err: HttpErrorResponse): Observable<any> => {
@@ -162,11 +147,6 @@ export class AuthEffect {
       )
     )
   );
-
-  // Método auxiliar para construir a URL do portal do aluno
-  private buildPortalAlunoUrl(token: string): string {
-    return `https://login.ecocursos.com.br/portal/aluno?token=${token}`;
-  }
 
   get hasValidUser(): boolean {
     let hasUser = false;
