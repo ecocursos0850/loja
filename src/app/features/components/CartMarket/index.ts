@@ -391,6 +391,8 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
   closeOrder(): void {
+    const isFreeOrder = this.hasFreeCourses();
+    
     const mock: OrderModel = {
       aluno: {
         id: this.userId
@@ -398,16 +400,17 @@ export class CartPageComponent implements OnInit, AfterContentInit {
       cursos: this.items.map(res => {
         return { id: res.id };
       }),
-      status: this.hasFreeCourses() ? 1 : 1, // Status 1 para pedido criado
-      tipoPagamentos: this.hasFreeCourses() ? [0] : [1, 2, 3], // Tipo 0 para gratuito
+      status: 1, // Status 1 para pedido criado
+      tipoPagamentos: isFreeOrder ? [0] : [1, 2, 3], // GARANTIDO: apenas [0] quando for gratuito
       subtotal: this.cartSubTotalPrice(),
-      descontos: this.hasFreeCourses() ? this.cartSubTotalPrice() : (this.isPartner() ? this.discountValue() : 0),
-      isento: this.hasFreeCourses() ? 1 : 0,
-      taxaMatricula: this.hasFreeCourses() ? 0 : 50
-      // Removida a propriedade 'total' que não existe no OrderModel
+      descontos: isFreeOrder ? this.cartSubTotalPrice() : (this.isPartner() ? this.discountValue() : 0),
+      isento: isFreeOrder ? 1 : 0,
+      taxaMatricula: isFreeOrder ? 0 : 50
     };
 
     console.log('Pedido a ser enviado:', mock);
+    console.log('Tipos de pagamento definidos:', mock.tipoPagamentos);
+    console.log('É compra gratuita?', isFreeOrder);
 
     this.store.dispatch(OrderActions.selectOrder({ order: mock }));
   }
