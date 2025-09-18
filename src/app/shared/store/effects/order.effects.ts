@@ -97,7 +97,8 @@ goToPageByPaymentType(): void {
       })
     );
     setTimeout(() => {
-      location.reload();
+      let url = "https://www.ecocursos.com.br/";
+      window.location.href = url;
     }, 4000);
 
   } else {
@@ -111,7 +112,7 @@ goToPageByPaymentType(): void {
       MessageAction.sendMessage({
         message: {
           severity: 'Success',
-          detail: `O checkout foi criado. Se acha que isso foi um engano e o curso é gratuito para você filiado(a), entre em contato conosco.`
+          detail: `Checkout criado com sucesso! Aguardamos a finalização do pagamento.`
         }
       })
     );
