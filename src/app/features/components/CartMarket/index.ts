@@ -79,6 +79,9 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 <p class="text-center font-medium text-amber-800 text-sm m-0">
                   Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
                   <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
+                  <span *ngIf="!allCoursesAreDireitoOnline()" class="text-red-600 font-bold">
+                    (Aplicável apenas para cursos da categoria Direito Online)
+                  </span>
                 </p>              
               </div>
 
@@ -91,6 +94,9 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 <p class="text-center font-medium text-blue-800 text-sm m-0">
                   Você é um conveniado do parceiro <strong>{{ partnerName() }}</strong> e possui 
                   <strong>10% de desconto</strong> em sua compra.
+                  <span *ngIf="!allCoursesAreDireitoOnline()" class="text-red-600 font-bold">
+                    (Aplicável apenas para cursos da categoria Direito Online)
+                  </span>
                 </p>              
               </div>
             </div>
@@ -143,6 +149,9 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                   </p>
                   <p class="text-sm text-600 m-0">
                     Categoria: {{ item.categoria.titulo }}
+                    <span *ngIf="!isDireitoOnlineCourse(item)" class="text-red-600 font-bold">
+                      (Descontos de parceiro não aplicáveis)
+                    </span>
                   </p>
                 </div>
               </td>
@@ -150,8 +159,8 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
               <td class="'text-600'">{{ (item.preco | currency) ?? '-' }}</td>
 
               <td>{{ ('0' | percent) ?? '-' }}</td>
-              <td [ngClass]="shouldApplyFreeDiscount() ? 'text-green-600' : 'text-600'">
-                {{ getDiscountText() }}
+              <td [ngClass]="shouldApplyFreeDiscount(item) ? 'text-green-600' : 'text-600'">
+                {{ getDiscountText(item) }}
               </td>
               <td class="font-bold">
                 {{ calculateFinalValueItem(item) | currency }}
@@ -299,10 +308,25 @@ export class CartPageComponent implements OnInit, AfterContentInit {
 
   partnerName = signal<string>('');
   hasPartner = signal<boolean>(false);
-  isNonAffiliatedPartner = signal<boolean>(false); // Parceiro NÃO conveniado (isParceiro = true) - HORAS GRATUITAS
-  isAffiliatedPartner = signal<boolean>(false); // Parceiro conveniado (isParceiro = false) - 10% DESCONTO
+  isNonAffiliatedPartner = signal<boolean>(false);
+  isAffiliatedPartner = signal<boolean>(false);
   hasFreeCourses = signal<boolean>(false);
   isRegularUser = signal<boolean>(true);
+
+  // Novo método para verificar se um curso é da categoria Direito Online
+  isDireitoOnlineCourse(item: CartType): boolean {
+    return item.categoria?.titulo?.toLowerCase().includes('direito online');
+  }
+
+  // Verificar se todos os cursos no carrinho são da categoria Direito Online
+  allCoursesAreDireitoOnline(): boolean {
+    return this.items?.every(item => this.isDireitoOnlineCourse(item)) ?? false;
+  }
+
+  // Verificar se há pelo menos um curso Direito Online no carrinho
+  hasAnyDireitoOnlineCourse(): boolean {
+    return this.items?.some(item => this.isDireitoOnlineCourse(item)) ?? false;
+  }
 
   ngOnInit(): void {
     this.getStateDataValues();
@@ -370,19 +394,21 @@ export class CartPageComponent implements OnInit, AfterContentInit {
 
         // REGRA DE GRATUIDADE: 
         // Só aplica 100% desconto se for parceiro NÃO conveniado E horas disponíveis >= horas totais
+        // E APENAS para cursos da categoria Direito Online
         this.hasFreeCourses.update(() => {
           return this.isNonAffiliatedPartner() && // Deve ser parceiro NÃO conveniado
-                 this.totalHours() <= this.availableHours(); // Horas totais <= horas disponíveis
+                 this.totalHours() <= this.availableHours() && // Horas totais <= horas disponíveis
+                 this.hasAnyDireitoOnlineCourse(); // Deve ter pelo menos um curso Direito Online
         });
   
         // Definir percentual de desconto baseado nas regras
         this.discountPercent.update(() => {
           if (this.hasFreeCourses()) {
-            return 1; // 100% de desconto (gratuidade) - APENAS para NÃO conveniados com horas suficientes
-          } else if (this.isAffiliatedPartner()) {
-            return 0.1; // 10% de desconto para conveniados
+            return 1; // 100% de desconto (gratuidade)
+          } else if (this.isAffiliatedPartner() && this.hasAnyDireitoOnlineCourse()) {
+            return 0.1; // 10% de desconto para conveniados (apenas se houver curso Direito Online)
           } else {
-            // Usuários regulares: SEM DESCONTO
+            // Usuários regulares ou sem cursos Direito Online: SEM DESCONTO
             return 0;
           }
         });
@@ -427,13 +453,19 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     return CourseTypeEnum[type];
   }
 
-  shouldApplyFreeDiscount(): boolean {
+  shouldApplyFreeDiscount(item: CartType): boolean {
     // Só aplica desconto gratuito se for parceiro NÃO conveniado com horas suficientes
-    return this.hasFreeCourses();
+    // E o curso específico for da categoria Direito Online
+    return this.hasFreeCourses() && this.isDireitoOnlineCourse(item);
   }
 
-  getDiscountText(): string {
-    if (this.shouldApplyFreeDiscount()) {
+  getDiscountText(item: CartType): string {
+    // Só aplica desconto se o curso for da categoria Direito Online
+    if (!this.isDireitoOnlineCourse(item)) {
+      return '0%';
+    }
+
+    if (this.shouldApplyFreeDiscount(item)) {
       return '-100%';
     } else if (this.isAffiliatedPartner()) {
       return '10%';
@@ -443,8 +475,13 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
   calculateFinalValueItem(item: CartType): number {
+    // Só aplica desconto se o curso for da categoria Direito Online
+    if (!this.isDireitoOnlineCourse(item)) {
+      return item.preco;
+    }
+
     // REGRA 1: Gratuidade (100% desconto) apenas para parceiros NÃO conveniados com horas suficientes
-    if (this.shouldApplyFreeDiscount()) {
+    if (this.shouldApplyFreeDiscount(item)) {
       return 0;
     }
     
@@ -470,26 +507,26 @@ export class CartPageComponent implements OnInit, AfterContentInit {
       status: 1,
       tipoPagamentos: isFreeOrder ? [0] : [1, 2, 3],
       subtotal: this.cartSubTotalPrice(),
-      descontos: isFreeOrder ? this.cartSubTotalPrice() : (this.isAffiliatedPartner() ? this.discountValue() : 0),
+      descontos: isFreeOrder ? this.cartSubTotalPrice() : (this.isAffiliatedPartner() && this.hasAnyDireitoOnlineCourse() ? this.discountValue() : 0),
       isento: isFreeOrder ? 1 : 0,
       taxaMatricula: isFreeOrder ? 0 : 50
     };
 
     console.log('=== DETALHES DO PEDIDO ===');
     console.log('Tipo de usuário:', this.getUserType());
-    console.log('É parceiro NÃO conveniado (horas gratuitas)?', this.isNonAffiliatedPartner());
-    console.log('É parceiro conveniado (10% desconto)?', this.isAffiliatedPartner());
+    console.log('É parceiro NÃO conveniado?', this.isNonAffiliatedPartner());
+    console.log('É parceiro conveniado?', this.isAffiliatedPartner());
     console.log('Horas disponíveis:', this.availableHours());
     console.log('Horas totais do carrinho:', this.totalHours());
+    console.log('Tem cursos Direito Online?', this.hasAnyDireitoOnlineCourse());
     console.log('Pode usar horas gratuitas?', this.hasFreeCourses());
     console.log('É compra gratuita?', isFreeOrder);
-    console.log('Desconto aplicado:', this.getDiscountText());
+    console.log('Desconto aplicado:', this.discountPercent());
     console.log('Pedido a ser enviado:', mock);
 
     this.store.dispatch(OrderActions.selectOrder({ order: mock }));
   }
 
-  // Método auxiliar para debugging
   private getUserType(): string {
     if (this.isRegularUser()) return 'USUÁRIO REGULAR (sem parceiro) - SEM DESCONTO';
     if (this.isNonAffiliatedPartner()) return 'PARCEIRO NÃO CONVENIADO (horas gratuitas)';

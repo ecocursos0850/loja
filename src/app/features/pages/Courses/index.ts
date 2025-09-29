@@ -214,24 +214,21 @@ import { NoDataComponent } from '../../../shared/components/NoData/index';
                   <p-button
                     [label]="
                     course.categoria?.titulo !== 'GRADUAÇÃO' && 
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
-                    course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
+                    course.categoria?.titulo !== '2ª GRADUAÇÃO'
                         ? 'Adicionar ao carrinho'
                         : 'Falar com vendedor'
                     "
                     styleClass="p-2"
                     [icon]="
                     course.categoria?.titulo !== 'GRADUAÇÃO'&&
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
-                    course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
+                    course.categoria?.titulo !== '2ª GRADUAÇÃO'
                         ? 'pi pi-cart-plus'
                         : 'pi pi-send'
                     "
                     [disabled]="disabledButton(course.id)"
                     (onClick)="
                     course.categoria?.titulo !== 'GRADUAÇÃO' &&
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
-                    course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
+                    course.categoria?.titulo !== '2ª GRADUAÇÃO'
                         ? addToCart(course)
                         : goToSalesRep()
                     "

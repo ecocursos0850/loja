@@ -21,7 +21,6 @@ import { DiscountCouponType } from '@shared/models/classes/ticket.interface.mode
 import {
   userDetailsAvailableHoursSelect,
   userDetailsDiscountSelect,
-  userDetailsPartner,
   userDetailsSelect
 } from '@shared/store/reducers/user-details.reducer';
 import { CheckoutActions } from '@shared/store/actions/checkout.actions';
@@ -83,12 +82,18 @@ import { CouponComponent } from '../Coupon';
         <div *ngIf="hasFreeCourses()" class="line-height-4 flex justify-content-between text-green-600">
           <strong>Desconto Parceiro (Horas Gratuitas)</strong>
           <span>-100%</span>
+          <div *ngIf="!allCoursesAreDireitoOnline()" class="text-xs text-red-600">
+            Aplicável apenas para cursos Direito Online
+          </div>
         </div>
         
         <!-- Desconto de 10% para parceiros conveniados -->
         <div *ngIf="hasAffiliatedDiscount() && !hasFreeCourses()" class="line-height-4 flex justify-content-between text-blue-600">
           <strong>Desconto Parceiro</strong>
           <span>-10%</span>
+          <div *ngIf="!allCoursesAreDireitoOnline()" class="text-xs text-red-600">
+            Aplicável apenas para cursos Direito Online
+          </div>
         </div>
 
         <!-- Outros descontos -->
@@ -182,6 +187,22 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   availableHours = signal<number>(0);
   cartTotalHours = signal<number>(0);
   partnerName = signal<string>('');
+  cartItems = signal<CartType[]>([]);
+
+  // Novo método para verificar se um curso é da categoria Direito Online
+  private isDireitoOnlineCourse(item: CartType): boolean {
+    return item.categoria?.titulo?.toLowerCase().includes('direito online');
+  }
+
+  // Verificar se todos os cursos no carrinho são da categoria Direito Online
+  allCoursesAreDireitoOnline(): boolean {
+    return this.cartItems()?.every(item => this.isDireitoOnlineCourse(item)) ?? false;
+  }
+
+  // Verificar se há pelo menos um curso Direito Online no carrinho
+  hasAnyDireitoOnlineCourse(): boolean {
+    return this.cartItems()?.some(item => this.isDireitoOnlineCourse(item)) ?? false;
+  }
 
   ngOnInit(): void {
     this.getCartData();
@@ -209,6 +230,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
       ]) => {
         this.totalPrice.update(() => totalPrice);
         this.totalItems.set(items.length);
+        this.cartItems.set(items);
         this.availableHours.set(availableHours || 0);
         this.cartTotalHours.set(cartTotalHours);
 
@@ -218,7 +240,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         this.hasAffiliatedDiscount.set(false);
         this.partnerName.set('');
 
-        // VERIFICAÇÃO DO TIPO DE USUÁRIO (igual ao CartPageComponent)
+        // VERIFICAÇÃO DO TIPO DE USUÁRIO
         if (userDetails && userDetails.length > 0) {
           const user = userDetails[0];
           
@@ -236,12 +258,17 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
             
             if (user.parceiro.isParceiro === true) {
               // REGRA 2A: Parceiro NÃO conveniado (isParceiro = true) - HORAS GRATUITAS
+              // Só aplica se houver cursos Direito Online no carrinho
               this.hasAffiliatedDiscount.set(false);
-              // Só aplica 100% desconto se tiver horas suficientes
-              this.hasFreeCourses.set(this.availableHours() >= this.cartTotalHours());
+              const hasEnoughHours = this.availableHours() >= this.cartTotalHours();
+              this.hasFreeCourses.set(
+                hasEnoughHours && 
+                this.hasAnyDireitoOnlineCourse() // APENAS se houver cursos Direito Online
+              );
             } else if (user.parceiro.isParceiro === false) {
               // REGRA 2B: Parceiro conveniado (isParceiro = false) - 10% DESCONTO
-              this.hasAffiliatedDiscount.set(true);
+              // Só aplica se houver cursos Direito Online no carrinho
+              this.hasAffiliatedDiscount.set(this.hasAnyDireitoOnlineCourse());
               this.hasFreeCourses.set(false);
             }
           }
@@ -256,9 +283,9 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         // DEFINIR PERCENTUAL DE DESCONTO BASEADO NAS REGRAS
         this.discountPercent.update(() => {
           if (this.hasFreeCourses()) {
-            return 1; // 100% desconto (gratuidade)
+            return 1; // 100% desconto (gratuidade) - APENAS para Direito Online
           } else if (this.hasAffiliatedDiscount()) {
-            return 0.1; // 10% desconto para conveniados
+            return 0.1; // 10% desconto para conveniados - APENAS para Direito Online
           } else {
             return Number(discountPercent) / 100; // Outros descontos
           }

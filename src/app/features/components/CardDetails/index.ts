@@ -200,22 +200,19 @@ import { DialogModule } from 'primeng/dialog';
                 [disabled]="disabledButton(course.id)"
                 [label]=" 
                 course.categoria?.titulo !== 'GRADUAÇÃO' &&
-                course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
-                course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
+                course.categoria?.titulo !== '2ª GRADUAÇÃO'
                     ? 'Adicionar ao carrinho'
                     : 'Falar com vendedor'
                 "
                 [icon]="
                 course.categoria?.titulo !== 'GRADUAÇÃO' &&
-                course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
-                course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
+                course.categoria?.titulo !== '2ª GRADUAÇÃO'
                     ? 'pi pi-cart-plus'
                     : 'pi pi-send'
                 "
                 (onClick)="
                 course.categoria?.titulo !== 'GRADUAÇÃO' &&
-                course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
-                course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'
+                course.categoria?.titulo !== '2ª GRADUAÇÃO'
                     ? addToCart(course)
                     : goToSalesRep()
                 "
