@@ -63,7 +63,11 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
         <div class="w-full flex py-4 bg-amber-50 border border-amber-200 rounded-lg mb-4 shadow-sm">
           <div class="w-full flex items-center justify-center px-4">
             <div class="w-full flex flex-column gap-3">
-              <div class="w-full flex py-4 px-4 bg-red-100 border border-red-300 rounded-lg items-center">
+              <!-- Mensagem sobre direito de uso - APENAS para cursos Direito Online -->
+              <div 
+                *ngIf="hasAnyDireitoOnlineCourse()"
+                class="w-full flex py-4 px-4 bg-red-100 border border-red-300 rounded-lg items-center"
+              >
                 <i class="pi pi-exclamation-triangle text-red-500 mr-3 text-lg"></i>
                 <p class="text-center font-medium text-red-800 text-sm m-0">
                   <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
