@@ -78,14 +78,21 @@ import { CouponComponent } from '../Coupon';
           <span>{{ totalPrice() | currency }}</span>
         </div>
         
+        <!-- Desconto 100% para parceiros NÃO conveniados com horas suficientes -->
         <div *ngIf="hasFreeCourses()" class="line-height-4 flex justify-content-between text-green-600">
           <strong>Desconto Parceiro (Horas Gratuitas)</strong>
           <span>-100%</span>
         </div>
         
+        <!-- Desconto 10% para parceiros conveniados -->
+        <div *ngIf="hasAffiliatedDiscount()" class="line-height-4 flex justify-content-between text-blue-600">
+          <strong>Desconto Parceiro (Conveniado)</strong>
+          <span>-10%</span>
+        </div>
+
+        <!-- Outros descontos -->
         <div
-          *ngIf="!hasFreeCourses()"
-          [ngClass]="hasFreeCourses() ? 'text-gray-400' : ''"
+          *ngIf="!hasFreeCourses() && !hasAffiliatedDiscount() && discountPercent() > 0"
           class="line-height-4 flex justify-content-between"
         >
           <strong>Descontos</strong>
@@ -169,10 +176,11 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   disabledCouponButton = signal<boolean>(false);
   discountPercent = signal<number>(0);
   hasFreeCourses = signal<boolean>(false);
-  isPartner = signal<boolean>(false);
+  hasAffiliatedDiscount = signal<boolean>(false);
+  isNonAffiliatedPartner = signal<boolean>(false); // Parceiro NÃO conveniado (horas gratuitas)
+  isAffiliatedPartner = signal<boolean>(false); // Parceiro conveniado (10% desconto)
   availableHours = signal<number>(0);
   cartTotalHours = signal<number>(0);
-  isAllLawOnline = signal<boolean>(false);
 
   ngOnInit(): void {
     this.getCartData();
@@ -203,19 +211,25 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         this.availableHours.set(availableHours || 0);
         this.cartTotalHours.set(cartTotalHours);
 
-        // Verificar se é parceiro
-        this.isPartner.set(userDetailsPartner !== null && userDetailsPartner !== undefined);
+        // CORREÇÃO: Distinção correta entre tipos de parceiro
+        if (userDetailsPartner) {
+          this.isNonAffiliatedPartner.set(userDetailsPartner.isParceiro === true); // NÃO conveniado
+          this.isAffiliatedPartner.set(userDetailsPartner.isParceiro === false); // Conveniado
+        } else {
+          this.isNonAffiliatedPartner.set(false);
+          this.isAffiliatedPartner.set(false);
+        }
 
-        // Verificar se todos os cursos são DIREITO ONLINE (ID 3)
-        this.isAllLawOnline.set(items.every(item => item.categoria.id === 3));
-
-        // Lógica corrigida para determinar se os cursos são gratuitos
-        // Só aplica se forem todos cursos DIREITO ONLINE (ID 3)
+        // CORREÇÃO: Lógica de gratuidade apenas para parceiros NÃO conveniados
         this.hasFreeCourses.update(() => {
-          return this.isPartner() && 
-                 this.isAllLawOnline() &&
+          return this.isNonAffiliatedPartner() && 
                  this.availableHours() > 0 && 
                  this.cartTotalHours() <= this.availableHours();
+        });
+
+        // CORREÇÃO: Desconto de 10% apenas para parceiros conveniados
+        this.hasAffiliatedDiscount.update(() => {
+          return this.isAffiliatedPartner();
         });
 
         if (coupon) {
@@ -224,8 +238,15 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
           this.ref?.close();
         }
 
+        // CORREÇÃO: Definição correta do percentual de desconto
         this.discountPercent.update(() => {
-          return this.hasFreeCourses() ? 1 : Number(discountPercent) / 100;
+          if (this.hasFreeCourses()) {
+            return 1; // 100% desconto para parceiros NÃO conveniados
+          } else if (this.hasAffiliatedDiscount()) {
+            return 0.1; // 10% desconto para parceiros conveniados
+          } else {
+            return Number(discountPercent) / 100; // Outros descontos
+          }
         });
 
         const couponValue = this.couponDiscount()?.valor || 0;
