@@ -1,312 +1,501 @@
 import {
+  AfterContentInit,
   ChangeDetectionStrategy,
-  ChangeDetectorRef,
   Component,
+  computed,
   inject,
-  OnDestroy,
   OnInit,
-  signal
+  signal,
+  WritableSignal
 } from '@angular/core';
-import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import {
+  AsyncPipe,
+  CurrencyPipe,
+  NgClass,
+  NgIf,
+  PercentPipe,
+  TitleCasePipe
+} from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { CartType } from '@shared/models/classes/cart-market.model';
 import {
   cartItemsSelector,
   cartTotalHoursSelector,
   cartTotalPriceSelector
 } from '@shared/store/reducers/cart.reducer';
-import { CurrencyPipe, NgClass, NgIf, PercentPipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { discountCouponSelect } from '@shared/store/reducers/discount-coupon.reducer';
-import { LoadingAction } from '@shared/store/actions/loading.actions';
-import { DiscountCouponType } from '@shared/models/classes/ticket.interface.model';
+import { CartActions } from '@shared/store/actions/cart.actions';
+import { CardNavigationActions } from '@shared/store/actions/card-navigation.actions';
+import { NoImageComponent } from '@shared/components/NoImage';
+import { CourseTypeEnum } from '@shared/models/enum/course-type.enum';
+import { OrderModel } from '@shared/models/classes/order.model';
+import { OrderActions } from '@shared/store/actions/order.actions';
 import {
-  userDetailsAvailableHoursSelect,
   userDetailsDiscountSelect,
-  userDetailsPartner
+  userDetailsSelect
 } from '@shared/store/reducers/user-details.reducer';
-import { CheckoutActions } from '@shared/store/actions/checkout.actions';
-import { CartType } from '@shared/models/classes/cart-market.model';
+import { checkoutTotalPaymentSelect } from '@shared/store/reducers/checkout.reducer';
 
-import { combineLatest, filter } from 'rxjs';
+import { combineLatest } from 'rxjs';
 
-import { DividerModule } from 'primeng/divider';
+import { ConfirmPopupModule } from 'primeng/confirmpopup';
+import { TableModule } from 'primeng/table';
+import { RatingModule } from 'primeng/rating';
+import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
-import { AnimateModule } from 'primeng/animate';
-import { Store } from '@ngrx/store';
-import { InplaceModule } from 'primeng/inplace';
+import { DividerModule } from 'primeng/divider';
 import { InputTextModule } from 'primeng/inputtext';
-import { RippleModule } from 'primeng/ripple';
-import { DialogModule } from 'primeng/dialog';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { Store } from '@ngrx/store';
+import { ConfirmationService, Message } from 'primeng/api';
 
-import { CouponComponent } from '../Coupon';
+import { QuoteSummaryComponent } from '../QuoteSummary';
+import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
 
 @Component({
-  selector: 'app-quote-summary',
+  selector: 'page-cart',
   standalone: true,
-  imports: [
-    DividerModule,
-    PercentPipe,
-    ButtonModule,
-    RouterLink,
-    AnimateModule,
-    CurrencyPipe,
-    NgIf,
-    NgClass,
-    InplaceModule,
-    InputTextModule,
-    RippleModule,
-    DialogModule,
-    FormsModule
-  ],
   template: `
-    <div class="card shadow-1 text-900 w-full">
-      <div [ngClass]="hasFreeCourses() ? 'text-gray-400' : ''">
-        <small>Você irá pagar</small>
-        <p class="text-5xl font-bold pt-2 pb-4 pl-4">
-          {{ total() | currency }}
-        </p>
-      </div>
-      <div
-        [ngClass]="hasFreeCourses() ? 'text-gray-400' : ''"
-        class="line-height-4"
-      >
-        <div class="flex justify-content-between">
-          <strong
-            >Subtotal ({{ totalItems() }}
-            {{ totalItems() > 1 ? 'cursos' : 'curso' }})</strong
-          >
-          <span>{{ totalPrice() | currency }}</span>
-        </div>
-        
-        <!-- Desconto 100% para parceiros NÃO conveniados com horas suficientes -->
-        <div *ngIf="hasFreeCourses()" class="line-height-4 flex justify-content-between text-green-600">
-          <strong>Desconto Parceiro (Horas Gratuitas)</strong>
-          <span>-100%</span>
-        </div>
-        
-        <!-- Desconto 10% para parceiros conveniados -->
-        <div *ngIf="hasAffiliatedDiscount()" class="line-height-4 flex justify-content-between text-blue-600">
-          <strong>Desconto Parceiro (Conveniado)</strong>
-          <span>-10%</span>
+    <div
+      *ngIf="items?.length; else noItems"
+      class="w-full border-round-lg shadow-1 max-w-62rem m-auto bg-white"
+    >
+      <div class="w-full ">
+        <div class="w-full flex py-4 bg-amber-50 border border-amber-200 rounded-lg mb-4 shadow-sm">
+          <div class="w-full flex items-center justify-center px-4">
+            <div class="w-full flex flex-column gap-3">
+              <div class="w-full flex py-4 px-4 bg-red-100 border border-red-300 rounded-lg items-center">
+                <i class="pi pi-exclamation-triangle text-red-500 mr-3 text-lg"></i>
+                <p class="text-center font-medium text-red-800 text-sm m-0">
+                  <strong>Importante:</strong> Você está adquirindo o direito de uso do curso por 6 meses a partir da data da compra.
+                </p>
+              </div>
+              
+              <!-- Mensagem para parceiros NÃO conveniados (isParceiro = true) - HORAS GRATUITAS -->
+              <div 
+                *ngIf="showPartnerFreeHoursMessage()"
+                class="w-full flex py-4 px-4 bg-yellow-100 border border-yellow-300 rounded-lg items-center"
+              >
+                <i class="pi pi-info-circle text-green-600 mr-3 text-lg"></i>
+                <p class="text-center font-medium text-amber-800 text-sm m-0">
+                  Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
+                  <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
+                </p>              
+              </div>
+
+              <!-- Mensagem para parceiros conveniados (isParceiro = false) - 10% DESCONTO -->
+              <div 
+                *ngIf="showAffiliatedDiscountMessage()"
+                class="w-full flex py-4 px-4 bg-blue-100 border border-blue-300 rounded-lg items-center"
+              >
+                <i class="pi pi-info-circle text-blue-600 mr-3 text-lg"></i>
+                <p class="text-center font-medium text-blue-800 text-sm m-0">
+                  Você é um conveniado do parceiro <strong>{{ partnerName() }}</strong> e possui 
+                  <strong>10% de desconto</strong> em sua compra.
+                </p>              
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Outros descontos -->
-        <div
-          *ngIf="!hasFreeCourses() && !hasAffiliatedDiscount() && discountPercent() > 0"
-          class="line-height-4 flex justify-content-between"
-        >
-          <strong>Descontos</strong>
-          <span>
-            {{ discountPercent() > 0 ? '-' : '' }}
-            {{ discountPercent() | percent }}</span
-          >
-        </div>
+        <p-table [value]="items" [tableStyle]="{ 'min-width': '30rem' }">
+          <ng-template pTemplate="header">
+            <tr class="text-xs text-center">
+              <th class="col-8">Curso</th>
+              <th class="w-1 text-center ">Preço</th>
+              <th class="text-center ">
+                Desconto <br />
+                EcoCursos
+              </th>
+              <th class="text-center w-1">
+                Desconto <br />
+                Parceiro
+              </th>
+              <th class="w-1">Valor final</th>
+              <th class="">
+                <p-button
+                  (onClick)="clearAllItems($event)"
+                  icon="pi pi-replay"
+                  [rounded]="true"
+                  size="small"
+                  severity="danger"
+                />
+              </th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-item>
+            <tr class="text-sm">
+              <td class="flex gap-3">
+                <div class="w-10rem h-6rem" *ngIf="item.capa; else noImage">
+                  <img
+                    class="w-full w-10rem h-full shadow-3 border-round-xl image-content"
+                    [src]="item.capa | directory_image"
+                    [alt]="item.titulo"
+                  />
+                </div>
+                <div class="flex flex-column gap-2">
+                  <p class="font-bold m-0">{{ item.titulo }}</p>
+                  <p class="text-sm text-600 m-0">
+                    {{ categoryType(item.tipoCurso) }}
+                  </p>
+                  <p class="text-sm text-600 m-0">
+                    Carga horária:
+                    <strong>{{ item.cargaHoraria }}</strong> horas
+                  </p>
+                  <p class="text-sm text-600 m-0">
+                    Categoria: {{ item.categoria.titulo }}
+                  </p>
+                </div>
+              </td>
 
-        <ng-container
-          *ngIf="
-            !couponDiscount()?.valor;
-            then insertCouponValue;
-            else hasCouponValue
-          "
-        >
-        </ng-container>
-      </div>
-      <p-divider />
-      <div
-        [ngClass]="hasFreeCourses() ? 'text-gray-400' : ''"
-        class="line-height-4 flex justify-content-between"
-      >
-        <strong>Total</strong>
-        <span>{{ total() | currency }}</span>
-      </div>
+              <td class="'text-600'">{{ (item.preco | currency) ?? '-' }}</td>
 
-      <div
-        *ngIf="!showButtonBack()"
-        class="w-full mt-2 flex justify-content-center"
-      >
-        <p-button
-          [routerLink]="'/carrinho-de-compras'"
-          styleClass="p-button-link text-sm"
-          label="Vizualizar carrinho"
-        />
+              <td>{{ ('0' | percent) ?? '-' }}</td>
+              <td [ngClass]="shouldApplyFreeDiscount() ? 'text-green-600' : 'text-600'">
+                {{ getDiscountText() }}
+              </td>
+              <td class="font-bold">
+                {{ calculateFinalValueItem(item) | currency }}
+              </td>
+              <td class="col-1">
+                <p-confirmPopup />
+                <p-button
+                  icon="pi pi-trash"
+                  class="text-sm"
+                  [rounded]="true"
+                  [text]="true"
+                  size="small"
+                  severity="danger"
+                  (onClick)="deleteItemFromCart($event, item)"
+                />
+              </td>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="summary">
+            <div class=" flex flex-wrap flex-row justify-content-end gap-3">
+              <div
+                class="flex line-height-4 font-normal
+                flex-column align-items-start md:align-items-end
+                justify-content-between text-lg"
+              >
+                <small
+                  >{{ items?.length }}
+                  {{ items.length > 1 ? 'cursos' : 'curso' }}, totalizando
+                  <strong>{{ this.totalHours() }}</strong> horas de
+                  estudo</small
+                >
+              </div>
+            </div>
+
+            <p-divider />
+
+            <div class="w-full flex justify-content-between">
+              <p-button
+                routerLink="/categorias"
+                class="text-sm"
+                icon="pi pi-money-bill"
+                styleClass="p-button-link text-sm"
+                [link]="true"
+                [size]="'small'"
+                label="Continuar comprando"
+              />
+              <p-button
+                icon="pi pi-dollar"
+                (onClick)="closeOrder()"
+                styleClass="p-button-sm"
+                label="Fechar pedido"
+                [size]="'small'"
+                [disabled]="disabledButton()"
+              />
+            </div>
+          </ng-template>
+        </p-table>
       </div>
     </div>
 
-    <ng-template #hasCouponValue>
+    <ng-template #noItems>
       <div
-        [ngClass]="hasFreeCourses() ? 'text-gray-400' : ''"
-        class="flex justify-content-between"
+        class="shadow-1 flex flex-1 flex-shrink-1 flex-column align-items-center
+        justify-content-center bg-white max-w-62rem m-auto p-8 border-round-2xl"
       >
-        <strong> Cupom de desconto </strong>
-        <span>- {{ couponDiscount()?.valor }} %</span>
+        <i class="mb-3 text-7xl pi pi-shopping-cart"></i>
+        <div class="text-left flex flex-column">
+          <span class="mb-2 text-2xl text-800"
+            >Crie um carrinho com cursos!</span
+          >
+          <span class="text-lg text-600"
+            >Adicione cursos e garanta discontos.</span
+          >
+        </div>
+        <div class="mt-5 w-22rem">
+          <p-button
+            styleClass="w-full"
+            label="Ver cursos"
+            routerLink="/categorias"
+          />
+        </div>
       </div>
     </ng-template>
 
-    <ng-template #insertCouponValue>
-      <p-button
-        (click)="handleCouponModal()"
-        [disabled]="hasFreeCourses() || disabledCouponButton()"
-        size="small"
-        [text]="true"
-        class="w-full"
-        styleClass="pl-0"
-        icon="pi pi-ticket"
-        pRipple
-        label="Inserir cupom de desconto"
-      >
-      </p-button>
+    <ng-template #noImage>
+      <app-no-image class="max-w-5rem" />
     </ng-template>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [DialogService]
+  imports: [
+    TitleCasePipe,
+    TableModule,
+    AsyncPipe,
+    RatingModule,
+    CurrencyPipe,
+    PercentPipe,
+    FormsModule,
+    TagModule,
+    ButtonModule,
+    DividerModule,
+    InputTextModule,
+    RouterLink,
+    NgIf,
+    NgClass,
+    QuoteSummaryComponent,
+    NoImageComponent,
+    ConfirmPopupModule,
+    GetDirectoryImage
+  ],
+  styles: [
+    `
+      .image-content {
+        display: block;
+        height: 100%;
+        object-fit: cover;
+        object-position: top;
+      }
+    `
+  ],
+  changeDetection: ChangeDetectionStrategy.Default,
+  providers: [ConfirmationService]
 })
-export class QuoteSummaryComponent implements OnInit, OnDestroy {
+export class CartPageComponent implements OnInit, AfterContentInit {
+  items: CartType[];
+  messages: Message[];
+  pageName = 'Meu carrinho de compras';
+
   private store = inject(Store);
-  private dialogService = inject(DialogService);
-  private changeDetectorRef = inject(ChangeDetectorRef);
-  private router = inject(Router);
+  private confirmationService = inject(ConfirmationService);
 
-  ref: DynamicDialogRef | undefined;
+  userId: number;
+  discountMoney = 0;
+  mountOrder1 = new OrderModel();
 
-  totalPrice = signal<number>(0);
-  totalItems = signal<number>(0);
-  total = signal<number>(0);
-  couponDiscount = signal(new DiscountCouponType());
-  showButtonBack = signal<boolean>(true);
-  disabledCouponButton = signal<boolean>(false);
-  discountPercent = signal<number>(0);
-  hasFreeCourses = signal<boolean>(false);
-  hasAffiliatedDiscount = signal<boolean>(false);
-  isNonAffiliatedPartner = signal<boolean>(false); // Parceiro NÃO conveniado (horas gratuitas)
-  isAffiliatedPartner = signal<boolean>(false); // Parceiro conveniado (10% desconto)
   availableHours = signal<number>(0);
-  cartTotalHours = signal<number>(0);
+  disabledButton = signal<boolean>(false);
+  totalFinalValue = signal<number>(0);
+  cartSubTotalPrice = signal<number>(0);
+  mountOrder = signal(new OrderModel());
+  totalFinalValueItem = signal<number>(0);
+  totalHours: WritableSignal<number> = signal<number>(0);
+  discountPercent: WritableSignal<number> = signal<number>(0);
+  discountValue = computed(
+    () => this.cartSubTotalPrice() * this.discountPercent()
+  );
+
+  partnerName = signal<string>('');
+  hasPartner = signal<boolean>(false);
+  isNonAffiliatedPartner = signal<boolean>(false); // Parceiro NÃO conveniado (isParceiro = true) - HORAS GRATUITAS
+  isAffiliatedPartner = signal<boolean>(false); // Parceiro conveniado (isParceiro = false) - 10% DESCONTO
+  hasFreeCourses = signal<boolean>(false);
+  isRegularUser = signal<boolean>(true);
 
   ngOnInit(): void {
-    this.getCartData();
-    this.checkCurrentRoute();
+    this.getStateDataValues();
   }
 
-  getCartData(): void {
+  ngAfterContentInit(): void {
+    this.store.dispatch(CardNavigationActions.enter());
+    this.store.dispatch(
+      CardNavigationActions.selectPage({ page: this.pageName })
+    );
+  }
+
+  getStateDataValues(): void {
     combineLatest([
-      this.store.select(cartTotalPriceSelector),
       this.store.select(cartItemsSelector),
-      this.store.select(discountCouponSelect),
-      this.store.select(userDetailsDiscountSelect),
-      this.store.select(userDetailsAvailableHoursSelect),
       this.store.select(cartTotalHoursSelector),
-      this.store.select(userDetailsPartner)
+      this.store.select(userDetailsSelect),
+      this.store.select(checkoutTotalPaymentSelect),
+      this.store.select(userDetailsDiscountSelect),
+      this.store.select(cartTotalPriceSelector)
     ]).subscribe(
       ([
-        totalPrice,
-        items,
-        coupon,
-        discountPercent,
-        availableHours,
+        cartItems,
         cartTotalHours,
-        userDetailsPartner
+        userDetails,
+        checkoutTotalPayment,
+        userDetailsDiscount,
+        cartSubTotalPrice
       ]) => {
-        this.totalPrice.update(() => totalPrice);
-        this.totalItems.set(items.length);
-        this.availableHours.set(availableHours || 0);
-        this.cartTotalHours.set(cartTotalHours);
-
-        // CORREÇÃO: Distinção correta entre tipos de parceiro
-        if (userDetailsPartner) {
-          this.isNonAffiliatedPartner.set(userDetailsPartner.isParceiro === true); // NÃO conveniado
-          this.isAffiliatedPartner.set(userDetailsPartner.isParceiro === false); // Conveniado
-        } else {
-          this.isNonAffiliatedPartner.set(false);
-          this.isAffiliatedPartner.set(false);
+        this.items = cartItems;
+        this.totalHours.update(() => cartTotalHours);
+        this.cartSubTotalPrice.update(() => cartSubTotalPrice);
+  
+        if (userDetails) {
+          userDetails.forEach(res => {
+            this.userId = res.id;
+            this.availableHours.set(res.horasDisponiveis);
+            
+            // CORREÇÃO: Usando apenas a propriedade 'parceiro' que existe no modelo
+            // REGRA 1: Usuário regular (sem parceiro) - SEM DESCONTO
+            if (!res.parceiro) {
+              this.isRegularUser.set(true);
+              this.hasPartner.set(false);
+              this.isNonAffiliatedPartner.set(false);
+              this.isAffiliatedPartner.set(false);
+              this.partnerName.set('');
+            }
+            // REGRA 2: Usuário com parceiro
+            else if (res.parceiro) {
+              this.hasPartner.set(true);
+              this.isRegularUser.set(false);
+              this.partnerName.set(res.parceiro.nome || '');
+              
+              // CORREÇÃO: Lógica baseada apenas no isParceiro
+              if (res.parceiro.isParceiro === true) {
+                // REGRA 2A: Parceiro NÃO conveniado (isParceiro = true) - HORAS GRATUITAS
+                this.isNonAffiliatedPartner.set(true);
+                this.isAffiliatedPartner.set(false);
+              } else if (res.parceiro.isParceiro === false) {
+                // REGRA 2B: Parceiro conveniado (isParceiro = false) - 10% DESCONTO
+                this.isNonAffiliatedPartner.set(false);
+                this.isAffiliatedPartner.set(true);
+              }
+            }
+          });
         }
 
-        // CORREÇÃO: Lógica de gratuidade apenas para parceiros NÃO conveniados
+        // REGRA DE GRATUIDADE: 
+        // Só aplica 100% desconto se for parceiro NÃO conveniado E horas disponíveis >= horas totais
         this.hasFreeCourses.update(() => {
-          return this.isNonAffiliatedPartner() && 
-                 this.availableHours() > 0 && 
-                 this.cartTotalHours() <= this.availableHours();
+          return this.isNonAffiliatedPartner() && // Deve ser parceiro NÃO conveniado
+                 this.totalHours() <= this.availableHours(); // Horas totais <= horas disponíveis
         });
-
-        // CORREÇÃO: Desconto de 10% apenas para parceiros conveniados
-        this.hasAffiliatedDiscount.update(() => {
-          return this.isAffiliatedPartner();
-        });
-
-        if (coupon) {
-          this.couponDiscount.update(() => coupon);
-          this.store.dispatch(LoadingAction.loading({ message: false }));
-          this.ref?.close();
-        }
-
-        // CORREÇÃO: Definição correta do percentual de desconto
+  
+        // Definir percentual de desconto baseado nas regras
         this.discountPercent.update(() => {
           if (this.hasFreeCourses()) {
-            return 1; // 100% desconto para parceiros NÃO conveniados
-          } else if (this.hasAffiliatedDiscount()) {
-            return 0.1; // 10% desconto para parceiros conveniados
+            return 1; // 100% de desconto (gratuidade) - APENAS para NÃO conveniados com horas suficientes
+          } else if (this.isAffiliatedPartner()) {
+            return 0.1; // 10% de desconto para conveniados
           } else {
-            return Number(discountPercent) / 100; // Outros descontos
+            // Usuários regulares: SEM DESCONTO
+            return 0;
           }
         });
-
-        const couponValue = this.couponDiscount()?.valor || 0;
-        const couponDiscountAmount = Number((this.totalPrice() * couponValue) / 100) || 0;
-
-        this.calculateTotalPayment(
-          this.totalPrice(),
-          couponDiscountAmount,
-          this.discountPercent()
-        );
-        
-        this.store.dispatch(
-          CheckoutActions.selectTotalPayment({ total: this.total() })
-        );
-
-        this.changeDetectorRef.markForCheck();
+  
+        if (checkoutTotalPayment) {
+          this.totalFinalValue.update(() => checkoutTotalPayment);
+        }
       }
     );
   }
 
-  checkCurrentRoute(): void {
-    this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe(() => {
-        const currentRoute = this.router.url;
-        if (currentRoute !== '/carrinho-de-compras') {
-          this.disabledCouponButton.update(() => true);
-        }
-      });
+  // Exibir mensagem apenas para parceiros NÃO conveniados (HORAS GRATUITAS)
+  showPartnerFreeHoursMessage(): boolean {
+    return this.isNonAffiliatedPartner() && this.partnerName() !== '';
   }
 
-  handleCouponModal(): void {
-    this.ref = this.dialogService.open(CouponComponent, {
-      header: 'Cupom',
-      contentStyle: { overflow: 'auto' },
-      styleClass: 'w-10 sm:w-9 mg:w-7 lg:w-5',
-      baseZIndex: 10000,
-      maximizable: false
+  // Exibir mensagem para parceiros conveniados (10% DESCONTO)
+  showAffiliatedDiscountMessage(): boolean {
+    return this.isAffiliatedPartner() && this.partnerName() !== '';
+  }
+
+  deleteItemFromCart(event: Event, item: CartType): void {
+    this.confirmationService.confirm({
+      target: event.target as EventTarget,
+      message: 'Deseja excluir esse item?',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () =>
+        this.store.dispatch(CartActions.removeItemToCart({ item: item }))
     });
   }
 
-  private calculateTotalPayment(
-    total: number,
-    couponDiscount: number,
-    discountPercent: number
-  ): void {
-    if (this.hasFreeCourses()) {
-      // Se os cursos são gratuitos, total = 0
-      this.total.set(0);
-      return;
-    }
-
-    // Cálculo normal para quando não são gratuitos
-    const priceAfterCoupon = total - couponDiscount;
-    const finalPrice = priceAfterCoupon - (priceAfterCoupon * discountPercent);
-    
-    this.total.set(Math.max(0, finalPrice)); // Garante que não seja negativo
+  clearAllItems(event: Event): void {
+    this.confirmationService.confirm({
+      target: event.target as EventTarget,
+      message: 'Deseja excluir todos os itens do carrinho?',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => this.store.dispatch(CartActions.clearAllItemsToCart())
+    });
   }
 
-  ngOnDestroy(): void {
-    if (this.ref) this.ref.close();
+  categoryType(type: number): string {
+    return CourseTypeEnum[type];
+  }
+
+  shouldApplyFreeDiscount(): boolean {
+    // Só aplica desconto gratuito se for parceiro NÃO conveniado com horas suficientes
+    return this.hasFreeCourses();
+  }
+
+  getDiscountText(): string {
+    if (this.shouldApplyFreeDiscount()) {
+      return '-100%';
+    } else if (this.isAffiliatedPartner()) {
+      return '10%';
+    } else {
+      return '0%';
+    }
+  }
+
+  calculateFinalValueItem(item: CartType): number {
+    // REGRA 1: Gratuidade (100% desconto) apenas para parceiros NÃO conveniados com horas suficientes
+    if (this.shouldApplyFreeDiscount()) {
+      return 0;
+    }
+    
+    // REGRA 2: 10% de desconto para parceiros conveniados
+    if (this.isAffiliatedPartner()) {
+      return item.preco - item.preco * 0.1;
+    }
+    
+    // REGRA 3: Usuários regulares - preço integral (SEM DESCONTO)
+    return item.preco;
+  }
+
+  closeOrder(): void {
+    const isFreeOrder = this.hasFreeCourses();
+    
+    const mock: OrderModel = {
+      aluno: {
+        id: this.userId
+      },
+      cursos: this.items.map(res => {
+        return { id: res.id };
+      }),
+      status: 1,
+      tipoPagamentos: isFreeOrder ? [0] : [1, 2, 3],
+      subtotal: this.cartSubTotalPrice(),
+      descontos: isFreeOrder ? this.cartSubTotalPrice() : (this.isAffiliatedPartner() ? this.discountValue() : 0),
+      isento: isFreeOrder ? 1 : 0,
+      taxaMatricula: isFreeOrder ? 0 : 50
+    };
+
+    console.log('=== DETALHES DO PEDIDO ===');
+    console.log('Tipo de usuário:', this.getUserType());
+    console.log('É parceiro NÃO conveniado (horas gratuitas)?', this.isNonAffiliatedPartner());
+    console.log('É parceiro conveniado (10% desconto)?', this.isAffiliatedPartner());
+    console.log('Horas disponíveis:', this.availableHours());
+    console.log('Horas totais do carrinho:', this.totalHours());
+    console.log('Pode usar horas gratuitas?', this.hasFreeCourses());
+    console.log('É compra gratuita?', isFreeOrder);
+    console.log('Desconto aplicado:', this.getDiscountText());
+    console.log('Pedido a ser enviado:', mock);
+
+    this.store.dispatch(OrderActions.selectOrder({ order: mock }));
+  }
+
+  // Método auxiliar para debugging
+  private getUserType(): string {
+    if (this.isRegularUser()) return 'USUÁRIO REGULAR (sem parceiro) - SEM DESCONTO';
+    if (this.isNonAffiliatedPartner()) return 'PARCEIRO NÃO CONVENIADO (horas gratuitas)';
+    if (this.isAffiliatedPartner()) return 'PARCEIRO CONVENIADO (10% desconto)';
+    return 'TIPO NÃO IDENTIFICADO';
   }
 }
