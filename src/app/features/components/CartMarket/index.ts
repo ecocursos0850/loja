@@ -298,12 +298,12 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   );
 
   partnerName = signal<string>('');
-  hasPartner = signal<boolean>(false); // Tem parceiro_id não nulo
+  hasPartner = signal<boolean>(false); // Tem parceiro
   isNonAffiliatedPartner = signal<boolean>(false); // Parceiro não conveniado (isParceiro = true)
   isAffiliatedPartner = signal<boolean>(false); // Parceiro conveniado (isParceiro = false)
   hasFreeCourses = signal<boolean>(false);
   isAllLawOnlineCourses = signal<boolean>(false);
-  isRegularUser = signal<boolean>(true); // Usuário sem afiliado_id e sem parceiro_id
+  isRegularUser = signal<boolean>(true); // Usuário sem parceiro
 
   ngOnInit(): void {
     this.getStateDataValues();
@@ -342,16 +342,16 @@ export class CartPageComponent implements OnInit, AfterContentInit {
             this.userId = res.id;
             this.availableHours.set(res.horasDisponiveis);
             
-            // REGRA 1: Usuário regular (sem afiliado_id e sem parceiro_id)
-            if (!res.afiliadoId && !res.parceiroId) {
+            // REGRA 1: Usuário regular (sem parceiro)
+            if (!res.parceiro) {
               this.isRegularUser.set(true);
               this.hasPartner.set(false);
               this.isNonAffiliatedPartner.set(false);
               this.isAffiliatedPartner.set(false);
               this.partnerName.set('');
             }
-            // REGRA 2: Usuário com parceiro_id não nulo
-            else if (res.parceiroId && res.parceiro) {
+            // REGRA 2: Usuário com parceiro
+            else if (res.parceiro) {
               this.hasPartner.set(true);
               this.isRegularUser.set(false);
               this.partnerName.set(res.parceiro.nome || '');
@@ -366,14 +366,6 @@ export class CartPageComponent implements OnInit, AfterContentInit {
                 this.isNonAffiliatedPartner.set(false);
                 this.isAffiliatedPartner.set(true);
               }
-            }
-            // REGRA 3: Usuário com afiliado_id (não implementado ainda)
-            else if (res.afiliadoId) {
-              // Futura implementação para afiliados
-              this.isRegularUser.set(false);
-              this.hasPartner.set(false);
-              this.isNonAffiliatedPartner.set(false);
-              this.isAffiliatedPartner.set(false);
             }
           });
         }
@@ -506,7 +498,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
 
   // Método auxiliar para debugging
   private getUserType(): string {
-    if (this.isRegularUser()) return 'USUÁRIO REGULAR (sem afiliado/parceiro)';
+    if (this.isRegularUser()) return 'USUÁRIO REGULAR (sem parceiro)';
     if (this.isNonAffiliatedPartner()) return 'PARCEIRO NÃO CONVENIADO';
     if (this.isAffiliatedPartner()) return 'PARCEIRO CONVENIADO';
     return 'TIPO NÃO IDENTIFICADO';
