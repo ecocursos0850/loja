@@ -70,7 +70,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 </p>
               </div>
               
-              <!-- Exibir apenas para parceiros NÃO conveniados -->
+              <!-- Exibir apenas para parceiros NÃO conveniados (isParceiro = true) -->
               <div 
                 *ngIf="showPartnerMessage()"
                 class="w-full flex py-4 px-4 bg-yellow-100 border border-yellow-300 rounded-lg items-center"
@@ -82,7 +82,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 </p>              
               </div>
 
-              <!-- Exibir mensagem para conveniados -->
+              <!-- Exibir mensagem para conveniados (isParceiro = false) -->
               <div 
                 *ngIf="isAffiliatedPartner() && !isNonAffiliatedPartner()"
                 class="w-full flex py-4 px-4 bg-blue-100 border border-blue-300 rounded-lg items-center"
@@ -298,8 +298,8 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   );
 
   partnerName = signal<string>('');
-  isAffiliatedPartner = signal<boolean>(false); // Conveniado (is_parceiro = 0)
-  isNonAffiliatedPartner = signal<boolean>(false); // Não conveniado (is_parceiro = 1)
+  isAffiliatedPartner = signal<boolean>(false); // Conveniado (isParceiro = false)
+  isNonAffiliatedPartner = signal<boolean>(false); // Não conveniado (isParceiro = true)
   hasFreeCourses = signal<boolean>(false);
   isAllLawOnlineCourses = signal<boolean>(false);
 
@@ -344,10 +344,10 @@ export class CartPageComponent implements OnInit, AfterContentInit {
             if (res.parceiro) {
               this.partnerName.set(res.parceiro.nome || '');
               
-              // is_parceiro = 0 → Conveniado (apenas desconto de 10%)
-              // is_parceiro = 1 → Não conveniado (horas gratuitas)
-              this.isAffiliatedPartner.set(res.parceiro.isParceiro === 0);
-              this.isNonAffiliatedPartner.set(res.parceiro.isParceiro === 1);
+              // isParceiro = false → Conveniado (apenas desconto de 10%)
+              // isParceiro = true → Não conveniado (horas gratuitas)
+              this.isAffiliatedPartner.set(res.parceiro.isParceiro === false);
+              this.isNonAffiliatedPartner.set(res.parceiro.isParceiro === true);
             }
           });
         }
