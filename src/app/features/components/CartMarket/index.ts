@@ -99,6 +99,22 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                   </span>
                 </p>              
               </div>
+
+              <!-- Mensagem informativa sobre horas disponíveis -->
+              <div 
+                *ngIf="showHoursInfoMessage()"
+                class="w-full flex py-4 px-4 bg-green-100 border border-green-300 rounded-lg items-center"
+              >
+                <i class="pi pi-info-circle text-green-600 mr-3 text-lg"></i>
+                <p class="text-center font-medium text-green-800 text-sm m-0">
+                  <strong>Horas disponíveis:</strong> {{ availableHours() }}h | 
+                  <strong>Horas Direito Online:</strong> {{ direitoOnlineTotalHours() }}h |
+                  <strong>Status:</strong> 
+                  <span [ngClass]="hasEnoughHoursForDireitoOnline() ? 'text-green-600' : 'text-red-600'">
+                    {{ hasEnoughHoursForDireitoOnline() ? 'SUFICIENTES' : 'INSUFICIENTES' }}
+                  </span>
+                </p>              
+              </div>
             </div>
           </div>
         </div>
@@ -152,6 +168,9 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                     <span *ngIf="!isDireitoOnlineCourse(item)" class="text-red-600 font-bold">
                       (Descontos de parceiro não aplicáveis)
                     </span>
+                    <span *ngIf="isDireitoOnlineCourse(item) && shouldApplyFreeDiscount(item)" class="text-green-600 font-bold">
+                      (GRATUITO - Horas disponíveis cobrem este curso)
+                    </span>
                   </p>
                 </div>
               </td>
@@ -192,6 +211,9 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                   <strong>{{ this.totalHours() }}</strong> horas de
                   estudo</small
                 >
+                <small *ngIf="hasAnyDireitoOnlineCourse()" class="text-green-700">
+                  ({{ direitoOnlineTotalHours() }}h em cursos Direito Online)
+                </small>
               </div>
             </div>
 
@@ -312,6 +334,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   isAffiliatedPartner = signal<boolean>(false);
   hasFreeCourses = signal<boolean>(false);
   isRegularUser = signal<boolean>(true);
+  direitoOnlineTotalHours = signal<number>(0);
 
   // Novo método para verificar se um curso é da categoria Direito Online
   isDireitoOnlineCourse(item: CartType): boolean {
@@ -326,6 +349,18 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   // Verificar se há pelo menos um curso Direito Online no carrinho
   hasAnyDireitoOnlineCourse(): boolean {
     return this.items?.some(item => this.isDireitoOnlineCourse(item)) ?? false;
+  }
+
+  // Calcular horas totais apenas dos cursos Direito Online
+  calculateDireitoOnlineTotalHours(): number {
+    return this.items
+      ?.filter(item => this.isDireitoOnlineCourse(item))
+      ?.reduce((total, item) => total + (item.cargaHoraria || 0), 0) ?? 0;
+  }
+
+  // Verificar se as horas disponíveis cobrem os cursos Direito Online
+  hasEnoughHoursForDireitoOnline(): boolean {
+    return this.availableHours() >= this.direitoOnlineTotalHours();
   }
 
   ngOnInit(): void {
@@ -359,6 +394,9 @@ export class CartPageComponent implements OnInit, AfterContentInit {
         this.items = cartItems;
         this.totalHours.update(() => cartTotalHours);
         this.cartSubTotalPrice.update(() => cartSubTotalPrice);
+        
+        // CALCULAR HORAS APENAS DOS CURSOS DIREITO ONLINE
+        this.direitoOnlineTotalHours.set(this.calculateDireitoOnlineTotalHours());
   
         if (userDetails) {
           userDetails.forEach(res => {
@@ -392,12 +430,13 @@ export class CartPageComponent implements OnInit, AfterContentInit {
           });
         }
 
-        // REGRA DE GRATUIDADE: 
-        // Só aplica 100% desconto se for parceiro NÃO conveniado E horas disponíveis >= horas totais
+        // REGRA DE GRATUIDADE ATUALIZADA: 
+        // Só aplica 100% desconto se for parceiro NÃO conveniado 
+        // E horas disponíveis >= horas DOS CURSOS DIREITO ONLINE
         // E APENAS para cursos da categoria Direito Online
         this.hasFreeCourses.update(() => {
           return this.isNonAffiliatedPartner() && // Deve ser parceiro NÃO conveniado
-                 this.totalHours() <= this.availableHours() && // Horas totais <= horas disponíveis
+                 this.hasEnoughHoursForDireitoOnline() && // Horas Direito Online <= horas disponíveis
                  this.hasAnyDireitoOnlineCourse(); // Deve ter pelo menos um curso Direito Online
         });
   
@@ -428,6 +467,11 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   // Exibir mensagem para parceiros conveniados (10% DESCONTO)
   showAffiliatedDiscountMessage(): boolean {
     return this.isAffiliatedPartner() && this.partnerName() !== '';
+  }
+
+  // Exibir mensagem informativa sobre horas
+  showHoursInfoMessage(): boolean {
+    return this.hasAnyDireitoOnlineCourse() && this.hasPartner();
   }
 
   deleteItemFromCart(event: Event, item: CartType): void {
@@ -518,7 +562,9 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     console.log('É parceiro conveniado?', this.isAffiliatedPartner());
     console.log('Horas disponíveis:', this.availableHours());
     console.log('Horas totais do carrinho:', this.totalHours());
+    console.log('Horas Direito Online:', this.direitoOnlineTotalHours());
     console.log('Tem cursos Direito Online?', this.hasAnyDireitoOnlineCourse());
+    console.log('Horas suficientes para Direito Online?', this.hasEnoughHoursForDireitoOnline());
     console.log('Pode usar horas gratuitas?', this.hasFreeCourses());
     console.log('É compra gratuita?', isFreeOrder);
     console.log('Desconto aplicado:', this.discountPercent());
