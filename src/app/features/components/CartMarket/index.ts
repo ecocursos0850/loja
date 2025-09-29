@@ -79,7 +79,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 <p class="text-center font-medium text-amber-800 text-sm m-0">
                   Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
                   <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
-                  <span *ngIf="!allCoursesAreDireitoOnline()" class="text-red-600 font-bold">
+                  <span class="text-red-600 font-bold">
                     (Aplicável apenas para cursos da categoria Direito Online)
                   </span>
                 </p>              
@@ -94,7 +94,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 <p class="text-center font-medium text-blue-800 text-sm m-0">
                   Você é um conveniado do parceiro <strong>{{ partnerName() }}</strong> e possui 
                   <strong>10% de desconto</strong> em sua compra.
-                  <span *ngIf="!allCoursesAreDireitoOnline()" class="text-red-600 font-bold">
+                  <span class="text-red-600 font-bold">
                     (Aplicável apenas para cursos da categoria Direito Online)
                   </span>
                 </p>              
@@ -170,6 +170,9 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                     </span>
                     <span *ngIf="isDireitoOnlineCourse(item) && shouldApplyFreeDiscount(item)" class="text-green-600 font-bold">
                       (GRATUITO - Horas disponíveis cobrem este curso)
+                    </span>
+                    <span *ngIf="isDireitoOnlineCourse(item) && !shouldApplyFreeDiscount(item) && isNonAffiliatedPartner()" class="text-red-600 font-bold">
+                      (SERÁ COBRADO - Horas insuficientes)
                     </span>
                   </p>
                 </div>
@@ -341,11 +344,6 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     return item.categoria?.titulo?.toLowerCase().includes('direito online');
   }
 
-  // Verificar se todos os cursos no carrinho são da categoria Direito Online
-  allCoursesAreDireitoOnline(): boolean {
-    return this.items?.every(item => this.isDireitoOnlineCourse(item)) ?? false;
-  }
-
   // Verificar se há pelo menos um curso Direito Online no carrinho
   hasAnyDireitoOnlineCourse(): boolean {
     return this.items?.some(item => this.isDireitoOnlineCourse(item)) ?? false;
@@ -430,7 +428,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
           });
         }
 
-        // REGRA DE GRATUIDADE ATUALIZADA: 
+        // REGRA DE GRATUIDADE CORRIGIDA: 
         // Só aplica 100% desconto se for parceiro NÃO conveniado 
         // E horas disponíveis >= horas DOS CURSOS DIREITO ONLINE
         // E APENAS para cursos da categoria Direito Online
@@ -441,11 +439,12 @@ export class CartPageComponent implements OnInit, AfterContentInit {
         });
   
         // Definir percentual de desconto baseado nas regras
+        // IMPORTANTE: O desconto só se aplica aos cursos Direito Online
         this.discountPercent.update(() => {
           if (this.hasFreeCourses()) {
-            return 1; // 100% de desconto (gratuidade)
+            return 1; // 100% de desconto (gratuidade) - APENAS para Direito Online
           } else if (this.isAffiliatedPartner() && this.hasAnyDireitoOnlineCourse()) {
-            return 0.1; // 10% de desconto para conveniados (apenas se houver curso Direito Online)
+            return 0.1; // 10% de desconto para conveniados - APENAS para Direito Online
           } else {
             // Usuários regulares ou sem cursos Direito Online: SEM DESCONTO
             return 0;
@@ -498,9 +497,13 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
   shouldApplyFreeDiscount(item: CartType): boolean {
-    // Só aplica desconto gratuito se for parceiro NÃO conveniado com horas suficientes
-    // E o curso específico for da categoria Direito Online
-    return this.hasFreeCourses() && this.isDireitoOnlineCourse(item);
+    // Só aplica desconto gratuito se:
+    // 1. For parceiro NÃO conveniado
+    // 2. Tiver horas suficientes para os cursos Direito Online
+    // 3. O curso específico for da categoria Direito Online
+    return this.isNonAffiliatedPartner() && 
+           this.hasEnoughHoursForDireitoOnline() && 
+           this.isDireitoOnlineCourse(item);
   }
 
   getDiscountText(item: CartType): string {
@@ -519,7 +522,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
   calculateFinalValueItem(item: CartType): number {
-    // Só aplica desconto se o curso for da categoria Direito Online
+    // Cursos de outras categorias SEMPRE são cobrados integralmente
     if (!this.isDireitoOnlineCourse(item)) {
       return item.preco;
     }
@@ -534,11 +537,16 @@ export class CartPageComponent implements OnInit, AfterContentInit {
       return item.preco - item.preco * 0.1;
     }
     
-    // REGRA 3: Usuários regulares - preço integral (SEM DESCONTO)
+    // REGRA 3: Usuários regulares ou parceiros NÃO conveniados sem horas suficientes - preço integral
     return item.preco;
   }
 
   closeOrder(): void {
+    // Calcular valor total dos cursos que serão cobrados
+    const cursosCobrados = this.items
+      .filter(item => !this.shouldApplyFreeDiscount(item))
+      .reduce((total, item) => total + this.calculateFinalValueItem(item), 0);
+
     const isFreeOrder = this.hasFreeCourses();
     
     const mock: OrderModel = {
@@ -565,9 +573,9 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     console.log('Horas Direito Online:', this.direitoOnlineTotalHours());
     console.log('Tem cursos Direito Online?', this.hasAnyDireitoOnlineCourse());
     console.log('Horas suficientes para Direito Online?', this.hasEnoughHoursForDireitoOnline());
-    console.log('Pode usar horas gratuitas?', this.hasFreeCourses());
-    console.log('É compra gratuita?', isFreeOrder);
-    console.log('Desconto aplicado:', this.discountPercent());
+    console.log('Cursos gratuitos (Direito Online):', this.items.filter(item => this.shouldApplyFreeDiscount(item)).length);
+    console.log('Cursos a serem cobrados:', this.items.filter(item => !this.shouldApplyFreeDiscount(item)).length);
+    console.log('Valor total a cobrar:', cursosCobrados);
     console.log('Pedido a ser enviado:', mock);
 
     this.store.dispatch(OrderActions.selectOrder({ order: mock }));
