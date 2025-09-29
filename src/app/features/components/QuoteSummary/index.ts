@@ -211,17 +211,26 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         this.availableHours.set(availableHours || 0);
         this.cartTotalHours.set(cartTotalHours);
 
-        // CORREÇÃO: Distinção correta entre tipos de parceiro
-        if (userDetailsPartner) {
-          this.isNonAffiliatedPartner.set(userDetailsPartner.isParceiro === true); // NÃO conveniado
-          this.isAffiliatedPartner.set(userDetailsPartner.isParceiro === false); // Conveniado
+        // CORREÇÃO: Verificação segura da estrutura do userDetailsPartner
+        if (userDetailsPartner && typeof userDetailsPartner === 'object') {
+          // Verificar se a propriedade existe usando acesso seguro
+          const partnerData = userDetailsPartner as any;
+          
+          if ('isParceiro' in partnerData) {
+            this.isNonAffiliatedPartner.set(partnerData.isParceiro === true); // NÃO conveniado
+            this.isAffiliatedPartner.set(partnerData.isParceiro === false); // Conveniado
+          } else {
+            // Se não tem a propriedade isParceiro, tratar como usuário regular
+            this.isNonAffiliatedPartner.set(false);
+            this.isAffiliatedPartner.set(false);
+          }
         } else {
+          // Se não tem parceiro, tratar como usuário regular
           this.isNonAffiliatedPartner.set(false);
           this.isAffiliatedPartner.set(false);
         }
 
         // CORREÇÃO: Lógica de gratuidade apenas para parceiros NÃO conveniados
-        // REMOVIDA a verificação de categoria DIREITO ONLINE
         this.hasFreeCourses.update(() => {
           return this.isNonAffiliatedPartner() && // Deve ser parceiro NÃO conveniado
                  this.availableHours() > 0 && 

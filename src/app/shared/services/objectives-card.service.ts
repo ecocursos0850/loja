@@ -22,7 +22,7 @@ export class ObjectiveCardDataService {
       },
       {
         id: '1002',
-        name: '+ de 13 mil alunos',
+        name: '+ de 30 mil alunos',
         icon: 'pi-search-plus',
         iconColor: `bg-green-500`
       },
