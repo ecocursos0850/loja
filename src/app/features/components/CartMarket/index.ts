@@ -70,11 +70,27 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 </p>
               </div>
               
-              <div class="w-full flex py-4 px-4 bg-yellow-100 border border-yellow-300 rounded-lg items-center">
+              <!-- Exibir apenas para parceiros NÃO conveniados -->
+              <div 
+                *ngIf="showPartnerMessage()"
+                class="w-full flex py-4 px-4 bg-yellow-100 border border-yellow-300 rounded-lg items-center"
+              >
                 <i class="pi pi-info-circle text-green-600 mr-3 text-lg"></i>
                 <p class="text-center font-medium text-amber-800 text-sm m-0">
                   Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
                   <strong>{{ availableHours() }} horas</strong> gratuitas disponíveis.
+                </p>              
+              </div>
+
+              <!-- Exibir mensagem para conveniados -->
+              <div 
+                *ngIf="isAffiliatedPartner() && !isNonAffiliatedPartner()"
+                class="w-full flex py-4 px-4 bg-blue-100 border border-blue-300 rounded-lg items-center"
+              >
+                <i class="pi pi-info-circle text-blue-600 mr-3 text-lg"></i>
+                <p class="text-center font-medium text-blue-800 text-sm m-0">
+                  Você é um conveniado do parceiro <strong>{{ partnerName() }}</strong> e possui 
+                  <strong>10% de desconto</strong> em sua compra.
                 </p>              
               </div>
             </div>
@@ -135,7 +151,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
 
               <td>{{ ('0' | percent) ?? '-' }}</td>
               <td [ngClass]="shouldApplyFreeDiscount(item) ? 'text-green-600' : 'text-600'">
-                {{ shouldApplyFreeDiscount(item) ? '-100%' : (discountPercent() * 100 + '%') }}
+                {{ getDiscountText(item) }}
               </td>
               <td class="font-bold">
                 {{ calculateFinalValueItem(item) | currency }}
@@ -282,7 +298,8 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   );
 
   partnerName = signal<string>('');
-  isPartner = signal<boolean>(false);
+  isAffiliatedPartner = signal<boolean>(false); // Conveniado (is_parceiro = 0)
+  isNonAffiliatedPartner = signal<boolean>(false); // Não conveniado (is_parceiro = 1)
   hasFreeCourses = signal<boolean>(false);
   isAllLawOnlineCourses = signal<boolean>(false);
 
@@ -322,12 +339,15 @@ export class CartPageComponent implements OnInit, AfterContentInit {
           userDetails.forEach(res => {
             this.userId = res.id;
             this.availableHours.set(res.horasDisponiveis);
-            this.isPartner.update(() => {
-              return res.parceiro && res.parceiro.isParceiro;
-            });
             
-            if (res.parceiro && res.parceiro.nome) {
-              this.partnerName.set(res.parceiro.nome);
+            // Verificar tipo de parceiro
+            if (res.parceiro) {
+              this.partnerName.set(res.parceiro.nome || '');
+              
+              // is_parceiro = 0 → Conveniado (apenas desconto de 10%)
+              // is_parceiro = 1 → Não conveniado (horas gratuitas)
+              this.isAffiliatedPartner.set(res.parceiro.isParceiro === 0);
+              this.isNonAffiliatedPartner.set(res.parceiro.isParceiro === 1);
             }
           });
         }
@@ -337,16 +357,22 @@ export class CartPageComponent implements OnInit, AfterContentInit {
           return this.items.every(item => item.categoria.id === 3);
         });
   
-        // Verificar se os cursos são gratuitos com base nas horas disponíveis
-        // Só aplica se forem todos cursos DIREITO ONLINE (ID 3)
+        // Verificar se os cursos são gratuitos (apenas para não conveniados)
         this.hasFreeCourses.update(() => {
-          return this.isPartner() && 
+          return this.isNonAffiliatedPartner() && 
                  this.isAllLawOnlineCourses() && 
                  this.totalHours() <= this.availableHours();
         });
   
+        // Definir percentual de desconto
         this.discountPercent.update(() => {
-          return this.hasFreeCourses() ? 1 : Number(userDetailsDiscount) / 100;
+          if (this.hasFreeCourses()) {
+            return 1; // 100% de desconto para cursos gratuitos
+          } else if (this.isAffiliatedPartner()) {
+            return 0.1; // 10% de desconto para conveniados
+          } else {
+            return Number(userDetailsDiscount) / 100; // Desconto padrão
+          }
         });
   
         if (checkoutTotalPayment) {
@@ -354,6 +380,11 @@ export class CartPageComponent implements OnInit, AfterContentInit {
         }
       }
     );
+  }
+
+  // Exibir mensagem apenas para parceiros NÃO conveniados
+  showPartnerMessage(): boolean {
+    return this.isNonAffiliatedPartner() && this.partnerName() !== '';
   }
 
   deleteItemFromCart(event: Event, item: CartType): void {
@@ -383,11 +414,24 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     return this.hasFreeCourses() && item.categoria.id === 3;
   }
 
+  getDiscountText(item: CartType): string {
+    if (this.shouldApplyFreeDiscount(item)) {
+      return '-100%';
+    } else if (this.isAffiliatedPartner()) {
+      return '10%';
+    } else {
+      return (this.discountPercent() * 100) + '%';
+    }
+  }
+
   calculateFinalValueItem(item: CartType): number {
     if (this.shouldApplyFreeDiscount(item)) {
-      return 0; // Curso gratuito
+      return 0; // Curso gratuito para não conveniados
     }
-    return item.preco - item.preco * (this.isPartner() ? this.discountPercent() : 0);
+    
+    // Aplicar desconto de 10% apenas para conveniados
+    const discount = this.isAffiliatedPartner() ? this.discountPercent() : 0;
+    return item.preco - item.preco * discount;
   }
 
   closeOrder(): void {
@@ -401,9 +445,9 @@ export class CartPageComponent implements OnInit, AfterContentInit {
         return { id: res.id };
       }),
       status: 1, // Status 1 para pedido criado
-      tipoPagamentos: isFreeOrder ? [0] : [1, 2, 3], // GARANTIDO: apenas [0] quando for gratuito
+      tipoPagamentos: isFreeOrder ? [0] : [1, 2, 3],
       subtotal: this.cartSubTotalPrice(),
-      descontos: isFreeOrder ? this.cartSubTotalPrice() : (this.isPartner() ? this.discountValue() : 0),
+      descontos: isFreeOrder ? this.cartSubTotalPrice() : (this.isAffiliatedPartner() ? this.discountValue() : 0),
       isento: isFreeOrder ? 1 : 0,
       taxaMatricula: isFreeOrder ? 0 : 50
     };
@@ -411,6 +455,8 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     console.log('Pedido a ser enviado:', mock);
     console.log('Tipos de pagamento definidos:', mock.tipoPagamentos);
     console.log('É compra gratuita?', isFreeOrder);
+    console.log('É conveniado?', this.isAffiliatedPartner());
+    console.log('É não conveniado?', this.isNonAffiliatedPartner());
 
     this.store.dispatch(OrderActions.selectOrder({ order: mock }));
   }
