@@ -10,7 +10,7 @@ export class ObjectiveCardDataService {
     return [
       {
         id: '1000',
-        name: '14 anos de mercado',
+        name: '16 anos de mercado',
         icon: 'pi-chart-bar',
         iconColor: `bg-blue-500`
       },
