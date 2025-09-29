@@ -40,6 +40,14 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 
 import { CouponComponent } from '../Coupon';
 
+// Interface para o parceiro
+interface Partner {
+  is_parceiro?: boolean;
+  isParceiro?: boolean;
+  // outras propriedades que podem existir
+  [key: string]: any;
+}
+
 @Component({
   selector: 'app-quote-summary',
   standalone: true,
@@ -84,7 +92,7 @@ import { CouponComponent } from '../Coupon';
           <span>-100%</span>
         </div>
         
-        <!-- Desconto de 10% para parceiros sem horas suficientes ou parceiros conveniados -->
+        <!-- Desconto de 10% para parceiros sem horas suficientes -->
         <div *ngIf="hasPartnerDiscount() && !hasFreeCourses()" class="line-height-4 flex justify-content-between text-blue-600">
           <strong>Desconto Parceiro</strong>
           <span>-10%</span>
@@ -210,26 +218,27 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         this.availableHours.set(availableHours || 0);
         this.cartTotalHours.set(cartTotalHours);
 
-        // Verificar se é parceiro
-        const isPartner = userDetailsPartner && 
-                         typeof userDetailsPartner === 'object' && 
-                         'is_parceiro' in userDetailsPartner && 
-                         userDetailsPartner.is_parceiro === true;
+        // Verificação segura do tipo do parceiro
+        let isPartnerValue = false;
         
-        this.isPartner.set(isPartner);
+        if (userDetailsPartner && typeof userDetailsPartner === 'object') {
+          const partner = userDetailsPartner as Partner;
+          
+          // Verifica tanto 'is_parceiro' quanto 'isParceiro' para compatibilidade
+          if (partner.is_parceiro === true || partner.isParceiro === true) {
+            isPartnerValue = true;
+          }
+        }
+        
+        this.isPartner.set(isPartnerValue);
+
+        const hasEnoughHours = this.availableHours() >= this.cartTotalHours();
 
         // REGRA 1: Se é parceiro E tem horas suficientes → 100% desconto
-        const hasEnoughHours = this.availableHours() >= this.cartTotalHours();
-        this.hasFreeCourses.update(() => isPartner && hasEnoughHours);
+        this.hasFreeCourses.update(() => isPartnerValue && hasEnoughHours);
 
         // REGRA 2: Se é parceiro mas NÃO tem horas suficientes → 10% desconto
-        this.hasPartnerDiscount.update(() => isPartner && !hasEnoughHours);
-
-        // REGRA 3: Se NÃO é parceiro → sem desconto de parceiro
-        if (!isPartner) {
-          this.hasFreeCourses.set(false);
-          this.hasPartnerDiscount.set(false);
-        }
+        this.hasPartnerDiscount.update(() => isPartnerValue && !hasEnoughHours);
 
         if (coupon) {
           this.couponDiscount.update(() => coupon);
