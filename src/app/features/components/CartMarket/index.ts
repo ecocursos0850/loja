@@ -70,7 +70,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
               >
                 <i class="pi pi-exclamation-triangle text-red-500 mr-3 text-lg"></i>
                 <p class="text-center font-medium text-red-800 text-sm m-0">
-                  <strong>Importante:</strong> Cursos da categoria Direito Online, você adquiri o direito de uso do curso por 6 meses a partir da data da compra.
+                  <strong>Importante:</strong> Nos cursos da categoria Direito Online, o acesso é válido por 6 meses a partir da data da compra.
                 </p>
               </div>
               
