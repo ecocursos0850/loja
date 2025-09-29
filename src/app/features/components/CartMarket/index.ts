@@ -70,7 +70,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 </p>
               </div>
               
-              <!-- Exibir apenas para parceiros NÃO conveniados (isParceiro = true) -->
+              <!-- Mensagem para parceiros NÃO conveniados (isParceiro = true) -->
               <div 
                 *ngIf="showPartnerMessage()"
                 class="w-full flex py-4 px-4 bg-yellow-100 border border-yellow-300 rounded-lg items-center"
@@ -82,9 +82,9 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 </p>              
               </div>
 
-              <!-- Exibir mensagem para conveniados (isParceiro = false) -->
+              <!-- Mensagem para conveniados (isParceiro = false) -->
               <div 
-                *ngIf="isAffiliatedPartner() && !isNonAffiliatedPartner()"
+                *ngIf="showAffiliatedMessage()"
                 class="w-full flex py-4 px-4 bg-blue-100 border border-blue-300 rounded-lg items-center"
               >
                 <i class="pi pi-info-circle text-blue-600 mr-3 text-lg"></i>
@@ -298,10 +298,12 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   );
 
   partnerName = signal<string>('');
-  isAffiliatedPartner = signal<boolean>(false); // Conveniado (isParceiro = false)
-  isNonAffiliatedPartner = signal<boolean>(false); // Não conveniado (isParceiro = true)
+  hasPartner = signal<boolean>(false); // Tem parceiro_id não nulo
+  isNonAffiliatedPartner = signal<boolean>(false); // Parceiro não conveniado (isParceiro = true)
+  isAffiliatedPartner = signal<boolean>(false); // Parceiro conveniado (isParceiro = false)
   hasFreeCourses = signal<boolean>(false);
   isAllLawOnlineCourses = signal<boolean>(false);
+  isRegularUser = signal<boolean>(true); // Usuário sem afiliado_id e sem parceiro_id
 
   ngOnInit(): void {
     this.getStateDataValues();
@@ -340,14 +342,38 @@ export class CartPageComponent implements OnInit, AfterContentInit {
             this.userId = res.id;
             this.availableHours.set(res.horasDisponiveis);
             
-            // Verificar tipo de parceiro
-            if (res.parceiro) {
+            // REGRA 1: Usuário regular (sem afiliado_id e sem parceiro_id)
+            if (!res.afiliadoId && !res.parceiroId) {
+              this.isRegularUser.set(true);
+              this.hasPartner.set(false);
+              this.isNonAffiliatedPartner.set(false);
+              this.isAffiliatedPartner.set(false);
+              this.partnerName.set('');
+            }
+            // REGRA 2: Usuário com parceiro_id não nulo
+            else if (res.parceiroId && res.parceiro) {
+              this.hasPartner.set(true);
+              this.isRegularUser.set(false);
               this.partnerName.set(res.parceiro.nome || '');
               
-              // isParceiro = false → Conveniado (apenas desconto de 10%)
-              // isParceiro = true → Não conveniado (pode ter horas gratuitas)
-              this.isAffiliatedPartner.set(res.parceiro.isParceiro === false);
-              this.isNonAffiliatedPartner.set(res.parceiro.isParceiro === true);
+              // Verificar tipo de parceiro
+              if (res.parceiro.isParceiro === true) {
+                // Parceiro NÃO conveniado - pode usar horas gratuitas
+                this.isNonAffiliatedPartner.set(true);
+                this.isAffiliatedPartner.set(false);
+              } else if (res.parceiro.isParceiro === false) {
+                // Parceiro conveniado - apenas 10% de desconto
+                this.isNonAffiliatedPartner.set(false);
+                this.isAffiliatedPartner.set(true);
+              }
+            }
+            // REGRA 3: Usuário com afiliado_id (não implementado ainda)
+            else if (res.afiliadoId) {
+              // Futura implementação para afiliados
+              this.isRegularUser.set(false);
+              this.hasPartner.set(false);
+              this.isNonAffiliatedPartner.set(false);
+              this.isAffiliatedPartner.set(false);
             }
           });
         }
@@ -357,23 +383,22 @@ export class CartPageComponent implements OnInit, AfterContentInit {
           return this.items.every(item => item.categoria.id === 3);
         });
   
-        // Verificar se os cursos são gratuitos - CONDICIONAL ESTRITA
-        // SÓ APLICA GRATUIDADE SE: usuário for não conveniado (isParceiro = true) E
-        // todos os cursos forem DIREITO ONLINE E horas totais <= horas disponíveis
+        // REGRA DE GRATUIDADE: Só aplica se for parceiro não conveniado
         this.hasFreeCourses.update(() => {
-          return this.isNonAffiliatedPartner() && // CONDIÇÃO OBRIGATÓRIA: is_parceiro = true
-                 this.isAllLawOnlineCourses() && 
-                 this.totalHours() <= this.availableHours();
+          return this.isNonAffiliatedPartner() && // Deve ser parceiro não conveniado
+                 this.isAllLawOnlineCourses() && // Todos cursos devem ser DIREITO ONLINE
+                 this.totalHours() <= this.availableHours(); // Horas totais <= horas disponíveis
         });
   
-        // Definir percentual de desconto
+        // Definir percentual de desconto baseado nas regras
         this.discountPercent.update(() => {
           if (this.hasFreeCourses()) {
-            return 1; // 100% de desconto para cursos gratuitos (APENAS para não conveniados)
+            return 1; // 100% de desconto (gratuidade)
           } else if (this.isAffiliatedPartner()) {
             return 0.1; // 10% de desconto para conveniados
           } else {
-            return Number(userDetailsDiscount) / 100; // Desconto padrão
+            // Usuários regulares ou outros casos: desconto padrão ou zero
+            return Number(userDetailsDiscount) / 100;
           }
         });
   
@@ -384,9 +409,14 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     );
   }
 
-  // Exibir mensagem apenas para parceiros NÃO conveniados (isParceiro = true)
+  // Exibir mensagem apenas para parceiros NÃO conveniados
   showPartnerMessage(): boolean {
     return this.isNonAffiliatedPartner() && this.partnerName() !== '';
+  }
+
+  // Exibir mensagem para parceiros conveniados
+  showAffiliatedMessage(): boolean {
+    return this.isAffiliatedPartner() && this.partnerName() !== '';
   }
 
   deleteItemFromCart(event: Event, item: CartType): void {
@@ -413,7 +443,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
   shouldApplyFreeDiscount(item: CartType): boolean {
-    // Só aplica desconto gratuito se for não conveniado E atender todas as condições
+    // Só aplica desconto gratuito se for parceiro não conveniado E atender todas as condições
     return this.hasFreeCourses() && item.categoria.id === 3;
   }
 
@@ -423,19 +453,25 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     } else if (this.isAffiliatedPartner()) {
       return '10%';
     } else {
-      return (this.discountPercent() * 100) + '%';
+      // Usuários regulares ou outros casos
+      const discount = this.discountPercent() * 100;
+      return discount > 0 ? discount + '%' : '0%';
     }
   }
 
   calculateFinalValueItem(item: CartType): number {
-    // Só aplica gratuidade se for não conveniado (isParceiro = true) e atender condições
+    // REGRA 1: Gratuidade apenas para parceiros não conveniados que atendam condições
     if (this.shouldApplyFreeDiscount(item)) {
-      return 0; // Curso gratuito APENAS para não conveniados
+      return 0;
     }
     
-    // Aplicar desconto de 10% apenas para conveniados (isParceiro = false)
-    const discount = this.isAffiliatedPartner() ? this.discountPercent() : 0;
-    return item.preco - item.preco * discount;
+    // REGRA 2: 10% de desconto para parceiros conveniados
+    if (this.isAffiliatedPartner()) {
+      return item.preco - item.preco * 0.1;
+    }
+    
+    // REGRA 3: Usuários regulares - preço integral
+    return item.preco;
   }
 
   closeOrder(): void {
@@ -448,7 +484,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
       cursos: this.items.map(res => {
         return { id: res.id };
       }),
-      status: 1, // Status 1 para pedido criado
+      status: 1,
       tipoPagamentos: isFreeOrder ? [0] : [1, 2, 3],
       subtotal: this.cartSubTotalPrice(),
       descontos: isFreeOrder ? this.cartSubTotalPrice() : (this.isAffiliatedPartner() ? this.discountValue() : 0),
@@ -456,14 +492,23 @@ export class CartPageComponent implements OnInit, AfterContentInit {
       taxaMatricula: isFreeOrder ? 0 : 50
     };
 
-    console.log('Pedido a ser enviado:', mock);
-    console.log('Tipos de pagamento definidos:', mock.tipoPagamentos);
+    console.log('=== DETALHES DO PEDIDO ===');
+    console.log('Tipo de usuário:', this.getUserType());
     console.log('É compra gratuita?', isFreeOrder);
-    console.log('É conveniado?', this.isAffiliatedPartner());
-    console.log('É não conveniado?', this.isNonAffiliatedPartner());
+    console.log('Parceiro:', this.partnerName());
     console.log('Horas disponíveis:', this.availableHours());
     console.log('Horas totais do carrinho:', this.totalHours());
+    console.log('Todos cursos são DIREITO ONLINE?', this.isAllLawOnlineCourses());
+    console.log('Pedido a ser enviado:', mock);
 
     this.store.dispatch(OrderActions.selectOrder({ order: mock }));
+  }
+
+  // Método auxiliar para debugging
+  private getUserType(): string {
+    if (this.isRegularUser()) return 'USUÁRIO REGULAR (sem afiliado/parceiro)';
+    if (this.isNonAffiliatedPartner()) return 'PARCEIRO NÃO CONVENIADO';
+    if (this.isAffiliatedPartner()) return 'PARCEIRO CONVENIADO';
+    return 'TIPO NÃO IDENTIFICADO';
   }
 }
