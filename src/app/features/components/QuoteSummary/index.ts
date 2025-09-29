@@ -78,21 +78,21 @@ import { CouponComponent } from '../Coupon';
           <span>{{ totalPrice() | currency }}</span>
         </div>
         
-        <!-- Desconto 100% para parceiros NÃO conveniados com horas suficientes -->
+        <!-- Desconto 100% para parceiros com horas suficientes -->
         <div *ngIf="hasFreeCourses()" class="line-height-4 flex justify-content-between text-green-600">
           <strong>Desconto Parceiro (Horas Gratuitas)</strong>
           <span>-100%</span>
         </div>
         
-        <!-- Desconto de porcentagem_desconto para parceiros conveniados -->
-        <div *ngIf="hasAffiliatedDiscount()" class="line-height-4 flex justify-content-between text-blue-600">
+        <!-- Desconto de 10% para parceiros sem horas suficientes ou parceiros conveniados -->
+        <div *ngIf="hasPartnerDiscount() && !hasFreeCourses()" class="line-height-4 flex justify-content-between text-blue-600">
           <strong>Desconto Parceiro</strong>
-          <span>-{{ partnerDiscountPercentage() }}%</span>
+          <span>-10%</span>
         </div>
 
         <!-- Outros descontos -->
         <div
-          *ngIf="!hasFreeCourses() && !hasAffiliatedDiscount() && discountPercent() > 0"
+          *ngIf="!hasFreeCourses() && !hasPartnerDiscount() && discountPercent() > 0"
           class="line-height-4 flex justify-content-between"
         >
           <strong>Descontos</strong>
@@ -176,12 +176,10 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   disabledCouponButton = signal<boolean>(false);
   discountPercent = signal<number>(0);
   hasFreeCourses = signal<boolean>(false);
-  hasAffiliatedDiscount = signal<boolean>(false);
-  isNonAffiliatedPartner = signal<boolean>(false); // Parceiro NÃO conveniado (isParceiro = true) - HORAS GRATUITAS
-  isAffiliatedPartner = signal<boolean>(false); // Parceiro conveniado (isParceiro = false) - porcentagem_desconto
+  hasPartnerDiscount = signal<boolean>(false);
   availableHours = signal<number>(0);
   cartTotalHours = signal<number>(0);
-  partnerDiscountPercentage = signal<number>(0); // porcentagem_desconto da tabela parceiro
+  isPartner = signal<boolean>(false);
 
   ngOnInit(): void {
     this.getCartData();
@@ -212,53 +210,26 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         this.availableHours.set(availableHours || 0);
         this.cartTotalHours.set(cartTotalHours);
 
-        // CORREÇÃO: Verificação segura da estrutura do userDetailsPartner
-        if (userDetailsPartner && typeof userDetailsPartner === 'object') {
-          const partnerData = userDetailsPartner as any;
-          
-          if ('isParceiro' in partnerData) {
-            // REGRA 1: Parceiro NÃO conveniado (isParceiro = true)
-            if (partnerData.isParceiro === true) {
-              this.isNonAffiliatedPartner.set(true);
-              this.isAffiliatedPartner.set(false);
-              
-              // REGRA 1A: Verificar se horas disponíveis cobrem horas totais
-              this.hasFreeCourses.update(() => {
-                return this.availableHours() >= this.cartTotalHours();
-              });
-            } 
-            // REGRA 2: Parceiro conveniado (isParceiro = false)
-            else if (partnerData.isParceiro === false) {
-              this.isNonAffiliatedPartner.set(false);
-              this.isAffiliatedPartner.set(true);
-              this.hasFreeCourses.set(false); // Nunca tem gratuidade
-              
-              // REGRA 2A: Aplicar porcentagem_desconto do parceiro
-              if ('porcentagemDesconto' in partnerData) {
-                this.partnerDiscountPercentage.set(Number(partnerData.porcentagemDesconto) || 0);
-              } else {
-                this.partnerDiscountPercentage.set(0);
-              }
-            }
-          } else {
-            // Se não tem a propriedade isParceiro, tratar como usuário regular
-            this.isNonAffiliatedPartner.set(false);
-            this.isAffiliatedPartner.set(false);
-            this.hasFreeCourses.set(false);
-            this.partnerDiscountPercentage.set(0);
-          }
-        } else {
-          // Se não tem parceiro, tratar como usuário regular
-          this.isNonAffiliatedPartner.set(false);
-          this.isAffiliatedPartner.set(false);
-          this.hasFreeCourses.set(false);
-          this.partnerDiscountPercentage.set(0);
-        }
+        // Verificar se é parceiro
+        const isPartner = userDetailsPartner && 
+                         typeof userDetailsPartner === 'object' && 
+                         'is_parceiro' in userDetailsPartner && 
+                         userDetailsPartner.is_parceiro === true;
+        
+        this.isPartner.set(isPartner);
 
-        // CORREÇÃO: Desconto apenas para parceiros conveniados
-        this.hasAffiliatedDiscount.update(() => {
-          return this.isAffiliatedPartner() && this.partnerDiscountPercentage() > 0;
-        });
+        // REGRA 1: Se é parceiro E tem horas suficientes → 100% desconto
+        const hasEnoughHours = this.availableHours() >= this.cartTotalHours();
+        this.hasFreeCourses.update(() => isPartner && hasEnoughHours);
+
+        // REGRA 2: Se é parceiro mas NÃO tem horas suficientes → 10% desconto
+        this.hasPartnerDiscount.update(() => isPartner && !hasEnoughHours);
+
+        // REGRA 3: Se NÃO é parceiro → sem desconto de parceiro
+        if (!isPartner) {
+          this.hasFreeCourses.set(false);
+          this.hasPartnerDiscount.set(false);
+        }
 
         if (coupon) {
           this.couponDiscount.update(() => coupon);
@@ -266,12 +237,12 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
           this.ref?.close();
         }
 
-        // CORREÇÃO: Definição correta do percentual de desconto
+        // Definir percentual de desconto baseado nas regras
         this.discountPercent.update(() => {
           if (this.hasFreeCourses()) {
-            return 1; // 100% desconto para parceiros NÃO conveniados com horas suficientes
-          } else if (this.hasAffiliatedDiscount()) {
-            return this.partnerDiscountPercentage() / 100; // porcentagem_desconto para parceiros conveniados
+            return 1; // 100% desconto
+          } else if (this.hasPartnerDiscount()) {
+            return 0.1; // 10% desconto
           } else {
             return Number(discountPercent) / 100; // Outros descontos
           }
