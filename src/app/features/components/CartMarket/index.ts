@@ -345,7 +345,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
               this.partnerName.set(res.parceiro.nome || '');
               
               // isParceiro = false → Conveniado (apenas desconto de 10%)
-              // isParceiro = true → Não conveniado (horas gratuitas)
+              // isParceiro = true → Não conveniado (pode ter horas gratuitas)
               this.isAffiliatedPartner.set(res.parceiro.isParceiro === false);
               this.isNonAffiliatedPartner.set(res.parceiro.isParceiro === true);
             }
@@ -357,9 +357,11 @@ export class CartPageComponent implements OnInit, AfterContentInit {
           return this.items.every(item => item.categoria.id === 3);
         });
   
-        // Verificar se os cursos são gratuitos (apenas para não conveniados)
+        // Verificar se os cursos são gratuitos - CONDICIONAL ESTRITA
+        // SÓ APLICA GRATUIDADE SE: usuário for não conveniado (isParceiro = true) E
+        // todos os cursos forem DIREITO ONLINE E horas totais <= horas disponíveis
         this.hasFreeCourses.update(() => {
-          return this.isNonAffiliatedPartner() && 
+          return this.isNonAffiliatedPartner() && // CONDIÇÃO OBRIGATÓRIA: is_parceiro = true
                  this.isAllLawOnlineCourses() && 
                  this.totalHours() <= this.availableHours();
         });
@@ -367,7 +369,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
         // Definir percentual de desconto
         this.discountPercent.update(() => {
           if (this.hasFreeCourses()) {
-            return 1; // 100% de desconto para cursos gratuitos
+            return 1; // 100% de desconto para cursos gratuitos (APENAS para não conveniados)
           } else if (this.isAffiliatedPartner()) {
             return 0.1; // 10% de desconto para conveniados
           } else {
@@ -382,7 +384,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     );
   }
 
-  // Exibir mensagem apenas para parceiros NÃO conveniados
+  // Exibir mensagem apenas para parceiros NÃO conveniados (isParceiro = true)
   showPartnerMessage(): boolean {
     return this.isNonAffiliatedPartner() && this.partnerName() !== '';
   }
@@ -411,6 +413,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
   shouldApplyFreeDiscount(item: CartType): boolean {
+    // Só aplica desconto gratuito se for não conveniado E atender todas as condições
     return this.hasFreeCourses() && item.categoria.id === 3;
   }
 
@@ -425,11 +428,12 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
   calculateFinalValueItem(item: CartType): number {
+    // Só aplica gratuidade se for não conveniado (isParceiro = true) e atender condições
     if (this.shouldApplyFreeDiscount(item)) {
-      return 0; // Curso gratuito para não conveniados
+      return 0; // Curso gratuito APENAS para não conveniados
     }
     
-    // Aplicar desconto de 10% apenas para conveniados
+    // Aplicar desconto de 10% apenas para conveniados (isParceiro = false)
     const discount = this.isAffiliatedPartner() ? this.discountPercent() : 0;
     return item.preco - item.preco * discount;
   }
@@ -457,6 +461,8 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     console.log('É compra gratuita?', isFreeOrder);
     console.log('É conveniado?', this.isAffiliatedPartner());
     console.log('É não conveniado?', this.isNonAffiliatedPartner());
+    console.log('Horas disponíveis:', this.availableHours());
+    console.log('Horas totais do carrinho:', this.totalHours());
 
     this.store.dispatch(OrderActions.selectOrder({ order: mock }));
   }
