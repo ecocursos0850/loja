@@ -78,7 +78,7 @@ import { CouponComponent } from '../Coupon';
           <span>{{ totalPrice() | currency }}</span>
         </div>
         
-        <!-- Desconto 100% para parceiros NÃO conveniados com horas suficientes -->
+        <!-- Desconto 100% para parceiros NÃO conveniados com horas suficientes (DIREITO ONLINE) -->
         <div *ngIf="hasFreeCourses()" class="line-height-4 flex justify-content-between text-green-600">
           <strong>Desconto Parceiro (Horas Gratuitas)</strong>
           <span>- {{ freeCoursesDiscountValue() | currency }}</span>
@@ -87,13 +87,19 @@ import { CouponComponent } from '../Coupon';
           </div>
         </div>
         
-        <!-- Desconto de 10% para parceiros conveniados -->
+        <!-- Desconto de 10% para parceiros conveniados (DIREITO ONLINE) -->
         <div *ngIf="hasAffiliatedDiscount() && !hasFreeCourses()" class="line-height-4 flex justify-content-between text-blue-600">
           <strong>Desconto Parceiro (10%)</strong>
           <span>- {{ affiliatedDiscountValue() | currency }}</span>
           <div class="text-xs text-red-600">
             Aplicável apenas para cursos Direito Online
           </div>
+        </div>
+
+        <!-- Desconto para PÓS-GRADUAÇÃO / MBA -->
+        <div *ngIf="hasPosGraduacaoDiscount()" class="line-height-4 flex justify-content-between text-purple-600">
+          <strong>Desconto Pós-Graduação/MBA ({{ getPosGraduacaoDiscountPercent() }}%)</strong>
+          <span>- {{ posGraduacaoDiscountValue() | currency }}</span>
         </div>
 
         <!-- Cupom de desconto -->
@@ -145,6 +151,10 @@ import { CouponComponent } from '../Coupon';
             <span>Cursos Direito Online:</span>
             <span>{{ direitoOnlineSubtotal() | currency }}</span>
           </div>
+          <div *ngIf="hasAnyPosGraduacaoCourse()" class="flex justify-content-between">
+            <span>Cursos Pós-Graduação/MBA:</span>
+            <span>{{ posGraduacaoSubtotal() | currency }}</span>
+          </div>
           <div *ngIf="hasAffiliatedDiscount() && !hasFreeCourses()" class="flex justify-content-between text-blue-600">
             <span>Desconto 10% Direito Online:</span>
             <span>- {{ affiliatedDiscountValue() | currency }}</span>
@@ -152,6 +162,10 @@ import { CouponComponent } from '../Coupon';
           <div *ngIf="hasFreeCourses()" class="flex justify-content-between text-green-600">
             <span>Desconto 100% Direito Online:</span>
             <span>- {{ freeCoursesDiscountValue() | currency }}</span>
+          </div>
+          <div *ngIf="hasPosGraduacaoDiscount()" class="flex justify-content-between text-purple-600">
+            <span>Desconto {{ getPosGraduacaoDiscountPercent() }}% Pós-Graduação:</span>
+            <span>- {{ posGraduacaoDiscountValue() | currency }}</span>
           </div>
           <div class="flex justify-content-between font-bold">
             <span>Total a pagar:</span>
@@ -226,18 +240,46 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
   // Novos signals para cálculo detalhado
   direitoOnlineSubtotal = signal<number>(0);
+  posGraduacaoSubtotal = signal<number>(0);
   otherCategoriesTotal = signal<number>(0);
   freeCoursesDiscountValue = signal<number>(0);
   affiliatedDiscountValue = signal<number>(0);
+  posGraduacaoDiscountValue = signal<number>(0);
 
-  // Novo método para verificar se um curso é da categoria Direito Online
+  // Método para verificar se um curso é da categoria Direito Online
   private isDireitoOnlineCourse(item: CartType): boolean {
     return item.categoria?.titulo?.toLowerCase().includes('direito online');
+  }
+
+  // Método para verificar se um curso é da categoria PÓS-GRADUAÇÃO / MBA
+  private isPosGraduacaoCourse(item: CartType): boolean {
+    const categoria = item.categoria?.titulo?.toLowerCase() || '';
+    return categoria.includes('pós-graduação') || categoria.includes('mba') || categoria.includes('pos-graduacao');
   }
 
   // Verificar se há pelo menos um curso Direito Online no carrinho
   hasAnyDireitoOnlineCourse(): boolean {
     return this.cartItems()?.some(item => this.isDireitoOnlineCourse(item)) ?? false;
+  }
+
+  // Verificar se há pelo menos um curso PÓS-GRADUAÇÃO no carrinho
+  hasAnyPosGraduacaoCourse(): boolean {
+    return this.cartItems()?.some(item => this.isPosGraduacaoCourse(item)) ?? false;
+  }
+
+  // Verificar se tem desconto para PÓS-GRADUAÇÃO
+  hasPosGraduacaoDiscount(): boolean {
+    return this.hasPartner() && this.hasAnyPosGraduacaoCourse();
+  }
+
+  // Obter percentual de desconto para PÓS-GRADUAÇÃO
+  getPosGraduacaoDiscountPercent(): number {
+    if (this.isNonAffiliatedPartner()) {
+      return 20; // 20% para parceiros NÃO conveniados
+    } else if (this.isAffiliatedPartner()) {
+      return 10; // 10% para parceiros conveniados
+    }
+    return 0;
   }
 
   // Calcular horas totais apenas dos cursos Direito Online
@@ -254,10 +296,17 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
       ?.reduce((total, item) => total + (item.preco || 0), 0) ?? 0;
   }
 
+  // Calcular subtotal apenas dos cursos PÓS-GRADUAÇÃO
+  private calculatePosGraduacaoSubtotal(): number {
+    return this.cartItems()
+      ?.filter(item => this.isPosGraduacaoCourse(item))
+      ?.reduce((total, item) => total + (item.preco || 0), 0) ?? 0;
+  }
+
   // Calcular total dos cursos de outras categorias
   private calculateOtherCategoriesTotal(): number {
     return this.cartItems()
-      ?.filter(item => !this.isDireitoOnlineCourse(item))
+      ?.filter(item => !this.isDireitoOnlineCourse(item) && !this.isPosGraduacaoCourse(item))
       ?.reduce((total, item) => total + (item.preco || 0), 0) ?? 0;
   }
 
@@ -273,7 +322,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
   // Mostrar detalhamento de preços quando aplicável
   showPriceBreakdown(): boolean {
-    return this.hasAnyDireitoOnlineCourse() && (this.hasFreeCourses() || this.hasAffiliatedDiscount());
+    return this.hasAnyDireitoOnlineCourse() || this.hasAnyPosGraduacaoCourse();
   }
 
   ngOnInit(): void {
@@ -309,6 +358,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         // CALCULAR VALORES DETALHADOS
         this.direitoOnlineTotalHours.set(this.calculateDireitoOnlineTotalHours());
         this.direitoOnlineSubtotal.set(this.calculateDireitoOnlineSubtotal());
+        this.posGraduacaoSubtotal.set(this.calculatePosGraduacaoSubtotal());
         this.otherCategoriesTotal.set(this.calculateOtherCategoriesTotal());
 
         // RESETAR ESTADOS
@@ -336,7 +386,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
             this.partnerName.set(user.parceiro.nome || '');
             
             if (user.parceiro.isParceiro === true) {
-              // REGRA 2A: Parceiro NÃO conveniado (isParceiro = true) - HORAS GRATUITAS
+              // REGRA 2A: Parceiro NÃO conveniado (isParceiro = true)
               this.isNonAffiliatedPartner.set(true);
               this.hasAffiliatedDiscount.set(false);
               // Só aplica gratuidade se houver cursos Direito Online E horas suficientes
@@ -345,7 +395,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
                 this.hasAnyDireitoOnlineCourse()
               );
             } else if (user.parceiro.isParceiro === false) {
-              // REGRA 2B: Parceiro conveniado (isParceiro = false) - 10% DESCONTO
+              // REGRA 2B: Parceiro conveniado (isParceiro = false)
               this.isNonAffiliatedPartner.set(false);
               this.hasAffiliatedDiscount.set(this.hasAnyDireitoOnlineCourse());
               this.hasFreeCourses.set(false);
@@ -357,14 +407,15 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         if (this.hasFreeCourses()) {
           // Desconto de 100% nos cursos Direito Online
           this.freeCoursesDiscountValue.set(this.direitoOnlineSubtotal());
-          this.affiliatedDiscountValue.set(0);
         } else if (this.hasAffiliatedDiscount()) {
           // Desconto de 10% nos cursos Direito Online
           this.affiliatedDiscountValue.set(this.direitoOnlineSubtotal() * 0.1);
-          this.freeCoursesDiscountValue.set(0);
-        } else {
-          this.freeCoursesDiscountValue.set(0);
-          this.affiliatedDiscountValue.set(0);
+        }
+
+        // Calcular desconto para PÓS-GRADUAÇÃO
+        if (this.hasPosGraduacaoDiscount()) {
+          const discountPercent = this.getPosGraduacaoDiscountPercent() / 100;
+          this.posGraduacaoDiscountValue.set(this.posGraduacaoSubtotal() * discountPercent);
         }
 
         if (coupon) {
@@ -407,15 +458,19 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
   private calculateTotalPayment(): void {
     if (this.hasFreeCourses()) {
-      // REGRA: Cursos Direito Online são gratuitos, paga apenas outras categorias
-      this.total.set(this.otherCategoriesTotal());
+      // REGRA: Cursos Direito Online são gratuitos
+      // Paga: Cursos Pós-Graduação (com desconto) + Outras categorias
+      const posGraduacaoComDesconto = this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue();
+      const totalComDesconto = this.otherCategoriesTotal() + posGraduacaoComDesconto;
+      this.total.set(totalComDesconto);
       return;
     }
 
-    if (this.hasAffiliatedDiscount()) {
-      // REGRA: 10% de desconto apenas nos cursos Direito Online
+    if (this.hasAffiliatedDiscount() || this.hasPosGraduacaoDiscount()) {
+      // REGRA: Descontos aplicados apenas nas categorias específicas
       const direitoOnlineComDesconto = this.direitoOnlineSubtotal() - this.affiliatedDiscountValue();
-      const totalComDesconto = this.otherCategoriesTotal() + direitoOnlineComDesconto;
+      const posGraduacaoComDesconto = this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue();
+      const totalComDesconto = this.otherCategoriesTotal() + direitoOnlineComDesconto + posGraduacaoComDesconto;
       this.total.set(totalComDesconto);
       return;
     }

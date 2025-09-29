@@ -104,6 +104,18 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 </p>              
               </div>
 
+              <!-- Mensagem para PÓS-GRADUAÇÃO / MBA - 20% desconto para parceiros NÃO conveniados -->
+              <div 
+                *ngIf="showPosGraduacaoDiscountMessage()"
+                class="w-full flex py-4 px-4 bg-purple-100 border border-purple-300 rounded-lg items-center"
+              >
+                <i class="pi pi-info-circle text-purple-600 mr-3 text-lg"></i>
+                <p class="text-center font-medium text-purple-800 text-sm m-0">
+                  Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
+                  <strong>20% de desconto</strong> em cursos de Pós-Graduação/MBA.
+                </p>              
+              </div>
+
               <!-- Mensagem informativa sobre horas disponíveis -->
               <div 
                 *ngIf="showHoursInfoMessage()"
@@ -169,7 +181,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                   </p>
                   <p class="text-sm text-600 m-0">
                     Categoria: {{ item.categoria.titulo }}
-                    <span *ngIf="!isDireitoOnlineCourse(item)" class="text-red-600 font-bold">
+                    <span *ngIf="!isDireitoOnlineCourse(item) && !isPosGraduacaoCourse(item)" class="text-red-600 font-bold">
                       (Descontos de parceiro não aplicáveis)
                     </span>
                     <span *ngIf="isDireitoOnlineCourse(item) && shouldApplyFreeDiscount(item)" class="text-green-600 font-bold">
@@ -178,6 +190,9 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                     <span *ngIf="isDireitoOnlineCourse(item) && !shouldApplyFreeDiscount(item) && isNonAffiliatedPartner()" class="text-red-600 font-bold">
                       (SERÁ COBRADO - Horas insuficientes)
                     </span>
+                    <span *ngIf="isPosGraduacaoCourse(item) && hasPosGraduacaoDiscount()" class="text-purple-600 font-bold">
+                      ({{ getPosGraduacaoDiscountPercent() }}% desconto aplicado)
+                    </span>
                   </p>
                 </div>
               </td>
@@ -185,7 +200,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
               <td class="'text-600'">{{ (item.preco | currency) ?? '-' }}</td>
 
               <td>{{ ('0' | percent) ?? '-' }}</td>
-              <td [ngClass]="shouldApplyFreeDiscount(item) ? 'text-green-600' : 'text-600'">
+              <td [ngClass]="getDiscountClass(item)">
                 {{ getDiscountText(item) }}
               </td>
               <td class="font-bold">
@@ -221,6 +236,9 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 <small *ngIf="hasAnyDireitoOnlineCourse()" class="text-green-700">
                   ({{ direitoOnlineTotalHours() }}h em cursos Direito Online)
                 </small>
+                <small *ngIf="hasAnyPosGraduacaoCourse()" class="text-purple-700">
+                  ({{ posGraduacaoItems().length }} curso(s) Pós-Graduação/MBA)
+                </small>
               </div>
             </div>
 
@@ -232,7 +250,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 class="text-sm"
                 icon="pi pi-money-bill"
                 styleClass="p-button-link text-sm"
-                [link]="true"
+                [link]="true]
                 [size]="'small'"
                 label="Continuar comprando"
               />
@@ -342,15 +360,42 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   hasFreeCourses = signal<boolean>(false);
   isRegularUser = signal<boolean>(true);
   direitoOnlineTotalHours = signal<number>(0);
+  posGraduacaoItems = signal<CartType[]>([]);
 
-  // Novo método para verificar se um curso é da categoria Direito Online
+  // Método para verificar se um curso é da categoria Direito Online
   isDireitoOnlineCourse(item: CartType): boolean {
     return item.categoria?.titulo?.toLowerCase().includes('direito online');
+  }
+
+  // Método para verificar se um curso é da categoria PÓS-GRADUAÇÃO / MBA
+  isPosGraduacaoCourse(item: CartType): boolean {
+    const categoria = item.categoria?.titulo?.toLowerCase() || '';
+    return categoria.includes('pós-graduação') || categoria.includes('mba') || categoria.includes('pos-graduacao');
   }
 
   // Verificar se há pelo menos um curso Direito Online no carrinho
   hasAnyDireitoOnlineCourse(): boolean {
     return this.items?.some(item => this.isDireitoOnlineCourse(item)) ?? false;
+  }
+
+  // Verificar se há pelo menos um curso PÓS-GRADUAÇÃO no carrinho
+  hasAnyPosGraduacaoCourse(): boolean {
+    return this.items?.some(item => this.isPosGraduacaoCourse(item)) ?? false;
+  }
+
+  // Verificar se tem desconto para PÓS-GRADUAÇÃO
+  hasPosGraduacaoDiscount(): boolean {
+    return this.hasPartner() && this.hasAnyPosGraduacaoCourse();
+  }
+
+  // Obter percentual de desconto para PÓS-GRADUAÇÃO
+  getPosGraduacaoDiscountPercent(): number {
+    if (this.isNonAffiliatedPartner()) {
+      return 20; // 20% para parceiros NÃO conveniados
+    } else if (this.isAffiliatedPartner()) {
+      return 10; // 10% para parceiros conveniados
+    }
+    return 0;
   }
 
   // Calcular horas totais apenas dos cursos Direito Online
@@ -399,6 +444,11 @@ export class CartPageComponent implements OnInit, AfterContentInit {
         
         // CALCULAR HORAS APENAS DOS CURSOS DIREITO ONLINE
         this.direitoOnlineTotalHours.set(this.calculateDireitoOnlineTotalHours());
+        
+        // FILTRAR CURSOS PÓS-GRADUAÇÃO
+        this.posGraduacaoItems.set(
+          this.items?.filter(item => this.isPosGraduacaoCourse(item)) || []
+        );
   
         if (userDetails) {
           userDetails.forEach(res => {
@@ -420,11 +470,11 @@ export class CartPageComponent implements OnInit, AfterContentInit {
               this.partnerName.set(res.parceiro.nome || '');
               
               if (res.parceiro.isParceiro === true) {
-                // REGRA 2A: Parceiro NÃO conveniado (isParceiro = true) - HORAS GRATUITAS
+                // REGRA 2A: Parceiro NÃO conveniado (isParceiro = true)
                 this.isNonAffiliatedPartner.set(true);
                 this.isAffiliatedPartner.set(false);
               } else if (res.parceiro.isParceiro === false) {
-                // REGRA 2B: Parceiro conveniado (isParceiro = false) - 10% DESCONTO
+                // REGRA 2B: Parceiro conveniado (isParceiro = false)
                 this.isNonAffiliatedPartner.set(false);
                 this.isAffiliatedPartner.set(true);
               }
@@ -432,27 +482,11 @@ export class CartPageComponent implements OnInit, AfterContentInit {
           });
         }
 
-        // REGRA DE GRATUIDADE CORRIGIDA: 
-        // Só aplica 100% desconto se for parceiro NÃO conveniado 
-        // E horas disponíveis >= horas DOS CURSOS DIREITO ONLINE
-        // E APENAS para cursos da categoria Direito Online
+        // REGRA DE GRATUIDADE PARA DIREITO ONLINE
         this.hasFreeCourses.update(() => {
-          return this.isNonAffiliatedPartner() && // Deve ser parceiro NÃO conveniado
-                 this.hasEnoughHoursForDireitoOnline() && // Horas Direito Online <= horas disponíveis
-                 this.hasAnyDireitoOnlineCourse(); // Deve ter pelo menos um curso Direito Online
-        });
-  
-        // Definir percentual de desconto baseado nas regras
-        // IMPORTANTE: O desconto só se aplica aos cursos Direito Online
-        this.discountPercent.update(() => {
-          if (this.hasFreeCourses()) {
-            return 1; // 100% de desconto (gratuidade) - APENAS para Direito Online
-          } else if (this.isAffiliatedPartner() && this.hasAnyDireitoOnlineCourse()) {
-            return 0.1; // 10% de desconto para conveniados - APENAS para Direito Online
-          } else {
-            // Usuários regulares ou sem cursos Direito Online: SEM DESCONTO
-            return 0;
-          }
+          return this.isNonAffiliatedPartner() && 
+                 this.hasEnoughHoursForDireitoOnline() && 
+                 this.hasAnyDireitoOnlineCourse();
         });
   
         if (checkoutTotalPayment) {
@@ -464,12 +498,17 @@ export class CartPageComponent implements OnInit, AfterContentInit {
 
   // Exibir mensagem apenas para parceiros NÃO conveniados (HORAS GRATUITAS)
   showPartnerFreeHoursMessage(): boolean {
-    return this.isNonAffiliatedPartner() && this.partnerName() !== '';
+    return this.isNonAffiliatedPartner() && this.partnerName() !== '' && this.hasAnyDireitoOnlineCourse();
   }
 
   // Exibir mensagem para parceiros conveniados (10% DESCONTO)
   showAffiliatedDiscountMessage(): boolean {
-    return this.isAffiliatedPartner() && this.partnerName() !== '';
+    return this.isAffiliatedPartner() && this.partnerName() !== '' && this.hasAnyDireitoOnlineCourse();
+  }
+
+  // Exibir mensagem para PÓS-GRADUAÇÃO / MBA
+  showPosGraduacaoDiscountMessage(): boolean {
+    return this.hasPartner() && this.partnerName() !== '' && this.hasAnyPosGraduacaoCourse();
   }
 
   // Exibir mensagem informativa sobre horas
@@ -501,47 +540,63 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   }
 
   shouldApplyFreeDiscount(item: CartType): boolean {
-    // Só aplica desconto gratuito se:
-    // 1. For parceiro NÃO conveniado
-    // 2. Tiver horas suficientes para os cursos Direito Online
-    // 3. O curso específico for da categoria Direito Online
     return this.isNonAffiliatedPartner() && 
            this.hasEnoughHoursForDireitoOnline() && 
            this.isDireitoOnlineCourse(item);
   }
 
-  getDiscountText(item: CartType): string {
-    // Só aplica desconto se o curso for da categoria Direito Online
-    if (!this.isDireitoOnlineCourse(item)) {
-      return '0%';
+  getDiscountClass(item: CartType): string {
+    if (this.isDireitoOnlineCourse(item) && this.shouldApplyFreeDiscount(item)) {
+      return 'text-green-600';
+    } else if (this.isDireitoOnlineCourse(item) && this.isAffiliatedPartner()) {
+      return 'text-blue-600';
+    } else if (this.isPosGraduacaoCourse(item) && this.hasPosGraduacaoDiscount()) {
+      return 'text-purple-600';
     }
+    return 'text-600';
+  }
 
-    if (this.shouldApplyFreeDiscount(item)) {
-      return '-100%';
-    } else if (this.isAffiliatedPartner()) {
-      return '10%';
-    } else {
-      return '0%';
+  getDiscountText(item: CartType): string {
+    // Cursos Direito Online
+    if (this.isDireitoOnlineCourse(item)) {
+      if (this.shouldApplyFreeDiscount(item)) {
+        return '-100%';
+      } else if (this.isAffiliatedPartner()) {
+        return '10%';
+      }
     }
+    
+    // Cursos PÓS-GRADUAÇÃO / MBA
+    if (this.isPosGraduacaoCourse(item) && this.hasPosGraduacaoDiscount()) {
+      return `-${this.getPosGraduacaoDiscountPercent()}%`;
+    }
+    
+    return '0%';
   }
 
   calculateFinalValueItem(item: CartType): number {
-    // Cursos de outras categorias SEMPRE são cobrados integralmente
-    if (!this.isDireitoOnlineCourse(item)) {
+    // Cursos de outras categorias SEMPRE são cobrados integralmente (sem descontos especiais)
+    if (!this.isDireitoOnlineCourse(item) && !this.isPosGraduacaoCourse(item)) {
       return item.preco;
     }
 
-    // REGRA 1: Gratuidade (100% desconto) apenas para parceiros NÃO conveniados com horas suficientes
-    if (this.shouldApplyFreeDiscount(item)) {
+    // REGRA 1: Gratuidade (100% desconto) para Direito Online - parceiros NÃO conveniados com horas suficientes
+    if (this.isDireitoOnlineCourse(item) && this.shouldApplyFreeDiscount(item)) {
       return 0;
     }
     
-    // REGRA 2: 10% de desconto para parceiros conveniados
-    if (this.isAffiliatedPartner()) {
+    // REGRA 2: 10% de desconto para Direito Online - parceiros conveniados
+    if (this.isDireitoOnlineCourse(item) && this.isAffiliatedPartner()) {
       return item.preco - item.preco * 0.1;
     }
     
-    // REGRA 3: Usuários regulares ou parceiros NÃO conveniados sem horas suficientes - preço integral
+    // REGRA 3: Descontos para PÓS-GRADUAÇÃO / MBA
+    if (this.isPosGraduacaoCourse(item) && this.hasPosGraduacaoDiscount()) {
+      const discountPercent = this.getPosGraduacaoDiscountPercent() / 100;
+      return item.preco - item.preco * discountPercent;
+    }
+    
+    // REGRA 4: Sem descontos especiais - preço integral
     return item.preco;
   }
 
@@ -563,7 +618,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
       status: 1,
       tipoPagamentos: isFreeOrder ? [0] : [1, 2, 3],
       subtotal: this.cartSubTotalPrice(),
-      descontos: isFreeOrder ? this.cartSubTotalPrice() : (this.isAffiliatedPartner() && this.hasAnyDireitoOnlineCourse() ? this.discountValue() : 0),
+      descontos: isFreeOrder ? this.cartSubTotalPrice() : this.calculateTotalDiscount(),
       isento: isFreeOrder ? 1 : 0,
       taxaMatricula: isFreeOrder ? 0 : 50
     };
@@ -576,6 +631,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     console.log('Horas totais do carrinho:', this.totalHours());
     console.log('Horas Direito Online:', this.direitoOnlineTotalHours());
     console.log('Tem cursos Direito Online?', this.hasAnyDireitoOnlineCourse());
+    console.log('Tem cursos Pós-Graduação?', this.hasAnyPosGraduacaoCourse());
     console.log('Horas suficientes para Direito Online?', this.hasEnoughHoursForDireitoOnline());
     console.log('Cursos gratuitos (Direito Online):', this.items.filter(item => this.shouldApplyFreeDiscount(item)).length);
     console.log('Cursos a serem cobrados:', this.items.filter(item => !this.shouldApplyFreeDiscount(item)).length);
@@ -585,9 +641,21 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     this.store.dispatch(OrderActions.selectOrder({ order: mock }));
   }
 
+  private calculateTotalDiscount(): number {
+    let totalDiscount = 0;
+    
+    this.items.forEach(item => {
+      const originalPrice = item.preco;
+      const finalPrice = this.calculateFinalValueItem(item);
+      totalDiscount += originalPrice - finalPrice;
+    });
+    
+    return totalDiscount;
+  }
+
   private getUserType(): string {
     if (this.isRegularUser()) return 'USUÁRIO REGULAR (sem parceiro) - SEM DESCONTO';
-    if (this.isNonAffiliatedPartner()) return 'PARCEIRO NÃO CONVENIADO (horas gratuitas)';
+    if (this.isNonAffiliatedPartner()) return 'PARCEIRO NÃO CONVENIADO (horas gratuitas + 20% Pós-Graduação)';
     if (this.isAffiliatedPartner()) return 'PARCEIRO CONVENIADO (10% desconto)';
     return 'TIPO NÃO IDENTIFICADO';
   }
