@@ -232,6 +232,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   hasAffiliatedDiscount = signal<boolean>(false);
   isRegularUser = signal<boolean>(true);
   isNonAffiliatedPartner = signal<boolean>(false);
+  isAffiliatedPartner = signal<boolean>(false); // ADICIONADO: propriedade faltante
   availableHours = signal<number>(0);
   cartTotalHours = signal<number>(0);
   partnerName = signal<string>('');
@@ -366,6 +367,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         this.hasFreeCourses.set(false);
         this.hasAffiliatedDiscount.set(false);
         this.isNonAffiliatedPartner.set(false);
+        this.isAffiliatedPartner.set(false); // INICIALIZAR
         this.partnerName.set('');
 
         // VERIFICAÇÃO DO TIPO DE USUÁRIO
@@ -378,6 +380,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
             this.hasFreeCourses.set(false);
             this.hasAffiliatedDiscount.set(false);
             this.isNonAffiliatedPartner.set(false);
+            this.isAffiliatedPartner.set(false);
             this.partnerName.set('');
           }
           // REGRA 2: Usuário com parceiro
@@ -388,6 +391,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
             if (user.parceiro.isParceiro === true) {
               // REGRA 2A: Parceiro NÃO conveniado (isParceiro = true)
               this.isNonAffiliatedPartner.set(true);
+              this.isAffiliatedPartner.set(false);
               this.hasAffiliatedDiscount.set(false);
               // Só aplica gratuidade se houver cursos Direito Online E horas suficientes
               this.hasFreeCourses.set(
@@ -397,6 +401,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
             } else if (user.parceiro.isParceiro === false) {
               // REGRA 2B: Parceiro conveniado (isParceiro = false)
               this.isNonAffiliatedPartner.set(false);
+              this.isAffiliatedPartner.set(true);
               this.hasAffiliatedDiscount.set(this.hasAnyDireitoOnlineCourse());
               this.hasFreeCourses.set(false);
             }

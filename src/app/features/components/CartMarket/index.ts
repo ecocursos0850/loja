@@ -250,7 +250,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 class="text-sm"
                 icon="pi pi-money-bill"
                 styleClass="p-button-link text-sm"
-                [link]="true]
+                [link]="true"
                 [size]="'small'"
                 label="Continuar comprando"
               />
