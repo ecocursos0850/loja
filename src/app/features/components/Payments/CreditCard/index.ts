@@ -343,18 +343,25 @@ export class CreditCardComponent implements OnInit {
   calculateNumberPlots = (): void => {
     this.store.select(checkoutTotalPaymentSelect).subscribe({
       next: calculateTotalPayment => {
-        this.plots = Array.from({ length: 12 }, (_, index) => {
+        // pega qtd de parcelas permitida do backend (pedido)
+        const maxParcelasBackend = calculateTotalPayment?.totalParcelas || 1;
+  
+        // garante limite de 10x no máximo
+        const maxParcelas = Math.min(maxParcelasBackend, 10);
+  
+        this.plots = Array.from({ length: maxParcelas }, (_, index) => {
           const installment = index + 1;
           const endValue =
             installment !== 0
-              ? (calculateTotalPayment / installment).toFixed(2)
+              ? (calculateTotalPayment.total / installment).toFixed(2)
               : '0.00';
+  
           return {
             name: `${installment}x R$ ${endValue}`,
             code: installment.toString()
           };
         });
-
+  
         this.numberPlots = this.plots;
       }
     });
