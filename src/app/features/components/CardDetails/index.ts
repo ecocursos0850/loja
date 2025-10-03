@@ -186,8 +186,7 @@ import { DialogModule } from 'primeng/dialog';
             >
               <h1
               *ngIf="course.categoria?.titulo !== 'GRADUAÇÃO' &&
-              course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
-              course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'"
+              course.categoria?.titulo !== '2ª GRADUAÇÃO'
                 class="font-bold text-700 text-center md:text-left m-0 text-5xl col-12 md:col-6"
               >
                 {{ course.preco | currency }}

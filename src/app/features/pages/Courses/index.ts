@@ -190,8 +190,7 @@ import { NoDataComponent } from '../../../shared/components/NoData/index';
                   <div
                     class="flex flex-column"
                     *ngIf="course.categoria?.titulo !== 'GRADUAÇÃO' &&
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO' && 
-                    course.categoria?.titulo !== 'PÓS-GRADUAÇÃO / MBA'"
+                    course.categoria?.titulo !== '2ª GRADUAÇÃO'
                   >
                                    <span
                   [ngClass]="hasParcels(course.qtdParcelas) ? 'text-base' : 'text-2xl'"
