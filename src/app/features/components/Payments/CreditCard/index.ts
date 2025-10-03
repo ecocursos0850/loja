@@ -64,24 +64,13 @@ export interface CreditCardType {
         (ngSubmit)="onSubmit(form)"
       >
         <section class="grid formgrid p-fluid m-0">
-          <div
-            class="field col-12 sm:col-6 md:col-6  mb-4 flex flex-column flex-wrap"
-          >
-            <label
-              for="creditCard"
-              htmlFor="creditCard"
-              class="font-medium text-900"
-              >Bandeira do cartão
+          <div class="field col-12 sm:col-6 md:col-6 mb-4 flex flex-column flex-wrap">
+            <label for="creditCard" class="font-medium text-900">
+              Bandeira do cartão
               <small
                 id="creditCard-help"
-                [ngClass]="
-                  form.get('creditCard')?.invalid
-                    ? 'text-red-500'
-                    : 'text-green-500'
-                "
-              >
-                *
-              </small>
+                [ngClass]="form.get('creditCard')?.invalid ? 'text-red-500' : 'text-green-500'"
+              >*</small>
             </label>
             <p-dropdown
               [options]="creditCard"
@@ -94,11 +83,7 @@ export interface CreditCardType {
             >
               <ng-template pTemplate="selectedItem" let-selectedCard>
                 <div class="flex align-items-center gap-2" *ngIf="creditCard">
-                  <img
-                    [src]="selectedCard?.icon"
-                    style="width: 18px"
-                    [alt]=""
-                  />
+                  <img [src]="selectedCard?.icon" style="width: 18px" [alt]="" />
                   <div>{{ selectedCard?.name }}</div>
                 </div>
               </ng-template>
@@ -112,21 +97,12 @@ export interface CreditCardType {
           </div>
 
           <div class="field col-12 sm:col-12 md:col-6 mb-4">
-            <label
-              for="creditCardNumber"
-              htmlFor="creditCardNumber"
-              class="font-medium text-900"
-              >Número do Cartão
+            <label for="creditCardNumber" class="font-medium text-900">
+              Número do Cartão
               <small
                 id="creditCardNumber-help"
-                [ngClass]="
-                  form.get('creditCardNumber')?.invalid
-                    ? 'text-red-500'
-                    : 'text-green-500'
-                "
-              >
-                *
-              </small>
+                [ngClass]="form.get('creditCardNumber')?.invalid ? 'text-red-500' : 'text-green-500'"
+              >*</small>
             </label>
             <div>
               <p-inputMask
@@ -138,75 +114,38 @@ export interface CreditCardType {
           </div>
 
           <div class="field col-12 md:col-6 mb-4">
-            <label
-              for="firstName"
-              htmlFor="firstName"
-              class="font-medium text-900"
-              >Nome
+            <label for="firstName" class="font-medium text-900">
+              Nome
               <small
                 id="firstName-help"
-                [ngClass]="
-                  form.get('firstName')?.invalid
-                    ? 'text-red-500'
-                    : 'text-green-500'
-                "
-              >
-                *
-              </small>
+                [ngClass]="form.get('firstName')?.invalid ? 'text-red-500' : 'text-green-500'"
+              >*</small>
             </label>
             <div>
-              <input
-                pInputText
-                id="firstName"
-                class="p-component p-element"
-                formControlName="firstName"
-              />
+              <input pInputText id="firstName" class="p-component p-element" formControlName="firstName" />
             </div>
           </div>
 
           <div class="field col-12 md:col-6 mb-4">
-            <label
-              for="lastName"
-              htmlFor="lastName"
-              class="font-medium text-900"
-              >Sobrenome
+            <label for="lastName" class="font-medium text-900">
+              Sobrenome
               <small
                 id="lastName-help"
-                [ngClass]="
-                  form.get('lastName')?.invalid
-                    ? 'text-red-500'
-                    : 'text-green-500'
-                "
-              >
-                *
-              </small>
+                [ngClass]="form.get('lastName')?.invalid ? 'text-red-500' : 'text-green-500'"
+              >*</small>
             </label>
             <div>
-              <input
-                pInputText
-                id="lastName"
-                class="p-inputtext p-component p-element"
-                formControlName="lastName"
-              />
+              <input pInputText id="lastName" class="p-inputtext p-component p-element" formControlName="lastName" />
             </div>
           </div>
 
-          <div class="field col-8  md:col-4 mb-4">
-            <label
-              for="cardExpiration"
-              htmlFor="cardExpiration"
-              class="font-medium text-900"
-              >Validade
+          <div class="field col-8 md:col-4 mb-4">
+            <label for="cardExpiration" class="font-medium text-900">
+              Validade
               <small
                 id="cardExpiration-help"
-                [ngClass]="
-                  form.get('cardExpiration')?.invalid
-                    ? 'text-red-500'
-                    : 'text-green-500'
-                "
-              >
-                *
-              </small>
+                [ngClass]="form.get('cardExpiration')?.invalid ? 'text-red-500' : 'text-green-500'"
+              >*</small>
             </label>
             <div>
               <p-calendar
@@ -220,47 +159,25 @@ export interface CreditCardType {
           </div>
 
           <div class="field col-4 sm:col-12 md:col-3 mb-4">
-            <label
-              for="securityCode"
-              htmlFor="securityCode"
-              class="font-medium text-900"
-              >CVV
+            <label for="securityCode" class="font-medium text-900">
+              CVV
               <small
                 id="securityCode-help"
-                [ngClass]="
-                  form.get('securityCode')?.invalid
-                    ? 'text-red-500'
-                    : 'text-green-500'
-                "
-              >
-                *
-              </small>
+                [ngClass]="form.get('securityCode')?.invalid ? 'text-red-500' : 'text-green-500'"
+              >*</small>
             </label>
             <div>
-              <p-inputMask
-                mask="999"
-                formControlName="securityCode"
-                id="securityCode_input"
-              />
+              <p-inputMask mask="999" formControlName="securityCode" id="securityCode_input" />
             </div>
           </div>
 
           <div class="field col-12 sm:col-4 md:col-5 mb-4">
-            <label
-              for="numberPlots"
-              htmlFor="numberPlots"
-              class="font-medium text-900"
-              >Parcelas
+            <label for="numberPlots" class="font-medium text-900">
+              Parcelas
               <small
                 id="numberPlots-help"
-                [ngClass]="
-                  form.get('numberPlots')?.invalid
-                    ? 'text-red-500'
-                    : 'text-green-500'
-                "
-              >
-                *
-              </small>
+                [ngClass]="form.get('numberPlots')?.invalid ? 'text-red-500' : 'text-green-500'"
+              >*</small>
             </label>
             <p-dropdown
               [options]="numberPlots"
@@ -276,12 +193,7 @@ export interface CreditCardType {
 
         <footer class="w-full mt-4">
           <div class="flex justify-content-center">
-            <p-button
-              [disabled]="!form.valid"
-              type="submit"
-              label="Pagar com cartão"
-              styleClass="font-bold"
-            />
+            <p-button [disabled]="!form.valid" type="submit" label="Pagar com cartão" styleClass="font-bold" />
           </div>
         </footer>
       </form>
@@ -299,12 +211,13 @@ export class CreditCardComponent implements OnInit {
   numberPlots: CreditCardType[] = [];
   plots: CreditCardType[] = [];
   invoiceId: string;
+  maxParcelasBackend = 10; // fallback máximo de parcelas
 
   ngOnInit(): void {
     this.getCreditCardItems();
-    this.calculateNumberPlots();
-    this.getInvoiceId();
     this.configFormValues();
+    this.getInvoiceId();
+    this.calculateNumberPlots();
   }
 
   configFormValues(): void {
@@ -312,10 +225,7 @@ export class CreditCardComponent implements OnInit {
       creditCard: [this.creditCard, Validators.required],
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      creditCardNumber: [
-        '',
-        [(Validators.required, this.creditCardNumberValidator)]
-      ],
+      creditCardNumber: ['', [Validators.required, this.creditCardNumberValidator]],
       cardExpiration: ['', Validators.required],
       securityCode: ['', Validators.required],
       numberPlots: [null, [Validators.required]]
@@ -340,12 +250,10 @@ export class CreditCardComponent implements OnInit {
     return null;
   }
 
-  calculateNumberPlots = (): void => {
-    this.store.select(checkoutTotalParcelasSelect).subscribe({
-      next: maxParcelasBackend => {
-        const total = calculateTotalPayment; // já é number
-        const maxParcelas = Math.min(maxParcelasBackend, 10);
-    
+  calculateNumberPlots(): void {
+    this.store.select(checkoutTotalPaymentSelect).subscribe({
+      next: total => {
+        const maxParcelas = Math.min(this.maxParcelasBackend, 10);
         this.plots = Array.from({ length: maxParcelas }, (_, index) => {
           const installment = index + 1;
           const endValue = (total / installment).toFixed(2);
@@ -354,11 +262,10 @@ export class CreditCardComponent implements OnInit {
             code: installment.toString()
           };
         });
-    
         this.numberPlots = this.plots;
       }
     });
-  };
+  }
 
   getInvoiceId(): void {
     this.activatedRoute.params.subscribe({
