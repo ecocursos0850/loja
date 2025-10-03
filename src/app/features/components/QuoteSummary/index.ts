@@ -7,7 +7,7 @@ import {
   OnInit,
   signal
 } from '@angular/core';
-import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   cartItemsSelector,
   cartTotalHoursSelector,
@@ -26,7 +26,7 @@ import {
 import { CheckoutActions } from '@shared/store/actions/checkout.actions';
 import { CartType } from '@shared/models/classes/cart-market.model';
 
-import { combineLatest, filter } from 'rxjs';
+import { combineLatest } from 'rxjs';
 
 import { DividerModule } from 'primeng/divider';
 import { ButtonModule } from 'primeng/button';
@@ -222,9 +222,12 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
     // aplica regras já existentes
     if (this.hasFreeCourses()) {
-      totalCalculado = this.otherCategoriesTotal() + (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
+      totalCalculado =
+        this.otherCategoriesTotal() +
+        (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
     } else if (this.hasAffiliatedDiscount() || this.hasPosGraduacaoDiscount()) {
-      totalCalculado = this.otherCategoriesTotal() +
+      totalCalculado =
+        this.otherCategoriesTotal() +
         (this.direitoOnlineSubtotal() - this.affiliatedDiscountValue()) +
         (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
     }
@@ -236,6 +239,28 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
     }
 
     this.total.set(totalCalculado);
+  }
+
+  // 🔹 NOVOS MÉTODOS PARA O DESCONTO DE PÓS-GRADUAÇÃO
+  hasPosGraduacaoDiscount(): boolean {
+    return this.hasAnyPosGraduacaoCourse() && (this.isNonAffiliatedPartner() || this.isAffiliatedPartner());
+  }
+
+  getPosGraduacaoDiscountPercent(): number {
+    if (this.isNonAffiliatedPartner()) {
+      return 20; // 20% para parceiros NÃO conveniados
+    } else if (this.isAffiliatedPartner()) {
+      return 10; // 10% para parceiros conveniados
+    }
+    return 0;
+  }
+
+  // 🔹 MÉTODO DE APOIO (ajuste conforme sua regra de negócio real)
+  private hasAnyPosGraduacaoCourse(): boolean {
+    return this.cartItems().some(item =>
+      item.categoria?.toLowerCase().includes('pós') ||
+      item.categoria?.toLowerCase().includes('mba')
+    );
   }
 
   ngOnDestroy(): void {
