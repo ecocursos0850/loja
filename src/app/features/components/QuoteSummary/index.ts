@@ -229,7 +229,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   totalPrice = signal<number>(0);
   totalItems = signal<number>(0);
   total = signal<number>(0);
-  couponDiscount = signal(new DiscountCouponType());
+  couponDiscount = signal<DiscountCouponType | null>(null);
   showButtonBack = signal<boolean>(true);
   disabledCouponButton = signal<boolean>(false);
   hasFreeCourses = signal<boolean>(false);
@@ -290,7 +290,8 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
   // Verificar se há cupom de desconto aplicado
   hasCouponDiscount(): boolean {
-    return !!this.couponDiscount()?.valor;
+    const coupon = this.couponDiscount();
+    return !!coupon && coupon.valor !== undefined && coupon.valor !== null && coupon.valor > 0;
   }
 
   // Calcular horas totais apenas dos cursos Direito Online
@@ -367,7 +368,9 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         cartTotalHours,
         userDetails
       ]) => {
-        this.totalPrice.update(() => totalPrice);
+        console.log('Cart data updated:', { totalPrice, items, coupon, availableHours, cartTotalHours });
+        
+        this.totalPrice.set(totalPrice);
         this.totalItems.set(items.length);
         this.cartItems.set(items);
         this.availableHours.set(availableHours || 0);
@@ -432,21 +435,28 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
           this.posGraduacaoDiscountValue.set(this.posGraduacaoSubtotal() * discountPercent);
         }
 
-        // ATUALIZAR CUPOM E RECALCULAR
-        if (coupon) {
+        // ATUALIZAR CUPOM - CORREÇÃO PRINCIPAL
+        console.log('Coupon received from store:', coupon);
+        
+        if (coupon && coupon.valor !== undefined && coupon.valor !== null) {
+          console.log('Setting valid coupon:', coupon);
           this.couponDiscount.set(coupon);
           this.store.dispatch(LoadingAction.loading({ message: false }));
-          this.ref?.close();
           
-          setTimeout(() => {
-            this.calculateTotalPayment();
-          }, 0);
+          // Fechar dialog se estiver aberto
+          if (this.ref) {
+            this.ref.close();
+          }
         } else {
-          this.couponDiscount.set(new DiscountCouponType());
+          console.log('No valid coupon found, resetting...');
+          this.couponDiscount.set(null);
+          this.couponDiscountValue.set(0);
         }
 
+        // SEMPRE recalcular o pagamento após qualquer atualização
         this.calculateTotalPayment();
         
+        // Atualizar store com o total calculado
         this.store.dispatch(
           CheckoutActions.selectTotalPayment({ total: this.total() })
         );
@@ -462,7 +472,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         const currentRoute = this.router.url;
         if (currentRoute !== '/carrinho-de-compras') {
-          this.disabledCouponButton.update(() => true);
+          this.disabledCouponButton.set(true);
         }
       });
   }
@@ -475,33 +485,49 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
       baseZIndex: 10000,
       maximizable: false
     });
+
+    // Adicionar listener para quando o dialog fechar
+    this.ref.onClose.subscribe(() => {
+      console.log('Coupon dialog closed');
+      this.changeDetectorRef.markForCheck();
+    });
   }
 
   private calculateTotalPayment(): void {
     let totalCalculado = this.totalPrice();
+  
+    console.log('=== INICIANDO CÁLCULO DE PAGAMENTO ===');
+    console.log('Total base:', totalCalculado);
+    console.log('Has free courses:', this.hasFreeCourses());
+    console.log('Has affiliated discount:', this.hasAffiliatedDiscount());
+    console.log('Has pos graduacao discount:', this.hasPosGraduacaoDiscount());
+    console.log('Coupon discount:', this.couponDiscount());
   
     // 1) aplica regras de desconto de parceiro / pós
     if (this.hasFreeCourses()) {
       totalCalculado =
         this.otherCategoriesTotal() +
         (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
+      console.log('Após desconto free courses:', totalCalculado);
     } else if (this.hasAffiliatedDiscount() || this.hasPosGraduacaoDiscount()) {
       totalCalculado =
         this.otherCategoriesTotal() +
         (this.direitoOnlineSubtotal() - this.affiliatedDiscountValue()) +
         (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
+      console.log('Após descontos parceiro/pós:', totalCalculado);
     }
   
     console.log('Total após descontos iniciais:', totalCalculado);
-    console.log('Cupom aplicável:', this.couponDiscount()?.valor);
   
     // 2) aplica cupom de desconto sobre o total já calculado
     const totalAntesCupom = totalCalculado;
     totalCalculado = this.applyCouponDiscount(totalCalculado);
     
+    // Atualiza o valor do desconto do cupom para exibição
     this.couponDiscountValue.set(totalAntesCupom - totalCalculado);
   
-    console.log('Total após cupom:', totalCalculado);
+    console.log('Total final após cupom:', totalCalculado);
+    console.log('=== FIM DO CÁLCULO DE PAGAMENTO ===');
   
     // 3) atualiza o signal do total
     this.total.set(totalCalculado);
@@ -510,12 +536,12 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   private applyCouponDiscount(total: number): number {
     const couponDiscount = this.couponDiscount();
     
-    if (!couponDiscount?.valor) {
-      console.log('Nenhum cupom válido encontrado');
+    if (!this.hasCouponDiscount()) {
+      console.log('Nenhum cupom válido encontrado para aplicar desconto');
       return total;
     }
-  
-    const percentual = couponDiscount.valor;
+
+    const percentual = couponDiscount!.valor!;
     
     if (percentual <= 0 || percentual > 100) {
       console.warn('Percentual de desconto do cupom inválido:', percentual);
@@ -527,12 +553,14 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
     const desconto = (percentual / 100) * total;
     const totalComDesconto = total - desconto;
     
-    console.log(`Desconto: R$ ${desconto}, Total com desconto: R$ ${totalComDesconto}`);
+    console.log(`Desconto do cupom: R$ ${desconto}, Total com desconto: R$ ${totalComDesconto}`);
     
     return Math.max(0, totalComDesconto);
   }
 
   ngOnDestroy(): void {
-    if (this.ref) this.ref.close();
+    if (this.ref) {
+      this.ref.close();
+    }
   }
 }
