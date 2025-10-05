@@ -26,7 +26,7 @@ import {
 import { CheckoutActions } from '@shared/store/actions/checkout.actions';
 import { CartType } from '@shared/models/classes/cart-market.model';
 
-import { combineLatest, filter } from 'rxjs';
+import { combineLatest, filter, take } from 'rxjs';
 
 import { DividerModule } from 'primeng/divider';
 import { ButtonModule } from 'primeng/button';
@@ -227,6 +227,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
 
   ref: DynamicDialogRef | undefined;
+  private subscription: any;
 
   totalPrice = signal<number>(0);
   totalItems = signal<number>(0);
@@ -358,7 +359,8 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   }
 
   getCartData(): void {
-    combineLatest([
+    // Usar take(1) para evitar múltiplas subscriptions
+    this.subscription = combineLatest([
       this.store.select(cartTotalPriceSelector),
       this.store.select(cartItemsSelector),
       this.store.select(discountCouponSelect),
@@ -376,120 +378,117 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         cartTotalHours,
         userDetails
       ]) => {
-        console.log('🛒 Cart data updated:', { 
-          totalPrice, 
-          itemsCount: items?.length,
-          coupon: coupon,
-          availableHours 
-        });
-        
-        this.totalPrice.set(totalPrice || 0);
-        this.totalItems.set(items?.length || 0);
-        this.cartItems.set(items || []);
-        this.availableHours.set(availableHours || 0);
-        this.cartTotalHours.set(cartTotalHours || 0);
-        
-        // CALCULAR VALORES DETALHADOS
-        this.direitoOnlineTotalHours.set(this.calculateDireitoOnlineTotalHours());
-        this.direitoOnlineSubtotal.set(this.calculateDireitoOnlineSubtotal());
-        this.posGraduacaoSubtotal.set(this.calculatePosGraduacaoSubtotal());
-        this.otherCategoriesTotal.set(this.calculateOtherCategoriesTotal());
-
-        // RESETAR ESTADOS
-        this.isRegularUser.set(true);
-        this.hasFreeCourses.set(false);
-        this.hasAffiliatedDiscount.set(false);
-        this.isNonAffiliatedPartner.set(false);
-        this.isAffiliatedPartner.set(false);
-        this.partnerName.set('');
-
-        // VERIFICAÇÃO DO TIPO DE USUÁRIO
-        if (userDetails && userDetails.length > 0) {
-          const user = userDetails[0];
+        try {
+          console.log('🛒 Cart data updated - Quote Summary');
           
-          if (!user.parceiro) {
-            this.isRegularUser.set(true);
-          }
-          else if (user.parceiro) {
-            this.isRegularUser.set(false);
-            this.partnerName.set(user.parceiro.nome || '');
+          this.totalPrice.set(totalPrice || 0);
+          this.totalItems.set(items?.length || 0);
+          this.cartItems.set(items || []);
+          this.availableHours.set(availableHours || 0);
+          this.cartTotalHours.set(cartTotalHours || 0);
+          
+          // CALCULAR VALORES DETALHADOS
+          this.direitoOnlineTotalHours.set(this.calculateDireitoOnlineTotalHours());
+          this.direitoOnlineSubtotal.set(this.calculateDireitoOnlineSubtotal());
+          this.posGraduacaoSubtotal.set(this.calculatePosGraduacaoSubtotal());
+          this.otherCategoriesTotal.set(this.calculateOtherCategoriesTotal());
+
+          // RESETAR ESTADOS
+          this.isRegularUser.set(true);
+          this.hasFreeCourses.set(false);
+          this.hasAffiliatedDiscount.set(false);
+          this.isNonAffiliatedPartner.set(false);
+          this.isAffiliatedPartner.set(false);
+          this.partnerName.set('');
+
+          // VERIFICAÇÃO DO TIPO DE USUÁRIO
+          if (userDetails && userDetails.length > 0) {
+            const user = userDetails[0];
             
-            if (user.parceiro.isParceiro === true) {
-              this.isNonAffiliatedPartner.set(true);
-              this.isAffiliatedPartner.set(false);
-              this.hasAffiliatedDiscount.set(false);
-              this.hasFreeCourses.set(
-                this.hasEnoughHoursForDireitoOnline() && 
-                this.hasAnyDireitoOnlineCourse()
-              );
-            } else if (user.parceiro.isParceiro === false) {
-              this.isNonAffiliatedPartner.set(false);
-              this.isAffiliatedPartner.set(true);
-              this.hasAffiliatedDiscount.set(this.hasAnyDireitoOnlineCourse());
-              this.hasFreeCourses.set(false);
+            if (!user.parceiro) {
+              this.isRegularUser.set(true);
+            }
+            else if (user.parceiro) {
+              this.isRegularUser.set(false);
+              this.partnerName.set(user.parceiro.nome || '');
+              
+              if (user.parceiro.isParceiro === true) {
+                this.isNonAffiliatedPartner.set(true);
+                this.isAffiliatedPartner.set(false);
+                this.hasAffiliatedDiscount.set(false);
+                this.hasFreeCourses.set(
+                  this.hasEnoughHoursForDireitoOnline() && 
+                  this.hasAnyDireitoOnlineCourse()
+                );
+              } else if (user.parceiro.isParceiro === false) {
+                this.isNonAffiliatedPartner.set(false);
+                this.isAffiliatedPartner.set(true);
+                this.hasAffiliatedDiscount.set(this.hasAnyDireitoOnlineCourse());
+                this.hasFreeCourses.set(false);
+              }
             }
           }
-        }
 
-        // CALCULAR VALORES DE DESCONTO
-        if (this.hasFreeCourses()) {
-          this.freeCoursesDiscountValue.set(this.direitoOnlineSubtotal());
-        } else if (this.hasAffiliatedDiscount()) {
-          this.affiliatedDiscountValue.set(this.direitoOnlineSubtotal() * 0.1);
-        }
-
-        if (this.hasPosGraduacaoDiscount()) {
-          const discountPercent = this.getPosGraduacaoDiscountPercent() / 100;
-          this.posGraduacaoDiscountValue.set(this.posGraduacaoSubtotal() * discountPercent);
-        }
-
-        // TRATAMENTO DO CUPOM - CORREÇÃO PRINCIPAL
-        console.log('🎫 Coupon received from store:', coupon);
-        
-        if (coupon && typeof coupon === 'object' && 'valor' in coupon) {
-          const couponValue = (coupon as any).valor;
-          if (couponValue !== undefined && couponValue !== null && couponValue > 0) {
-            console.log('✅ Setting valid coupon:', coupon);
-            this.couponDiscount.set(coupon as DiscountCouponType);
-            
-            // Mostrar mensagem de sucesso
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Cupom aplicado!',
-              detail: `Desconto de ${couponValue}% aplicado com sucesso.`
-            });
-          } else {
-            console.log('❌ Invalid coupon value:', couponValue);
-            this.couponDiscount.set(null);
-            this.couponDiscountValue.set(0);
+          // CALCULAR VALORES DE DESCONTO
+          if (this.hasFreeCourses()) {
+            this.freeCoursesDiscountValue.set(this.direitoOnlineSubtotal());
+          } else if (this.hasAffiliatedDiscount()) {
+            this.affiliatedDiscountValue.set(this.direitoOnlineSubtotal() * 0.1);
           }
-        } else {
-          console.log('❌ No valid coupon object found');
-          this.couponDiscount.set(null);
-          this.couponDiscountValue.set(0);
+
+          if (this.hasPosGraduacaoDiscount()) {
+            const discountPercent = this.getPosGraduacaoDiscountPercent() / 100;
+            this.posGraduacaoDiscountValue.set(this.posGraduacaoSubtotal() * discountPercent);
+          }
+
+          // TRATAMENTO DO CUPOM - Simplificado
+          this.handleCouponUpdate(coupon);
+
+          // SEMPRE recalcular o pagamento
+          this.calculateTotalPayment();
+          
+          // Atualizar store com o total calculado
+          this.store.dispatch(
+            CheckoutActions.selectTotalPayment({ total: this.total() })
+          );
+
+          this.changeDetectorRef.detectChanges();
+        } catch (error) {
+          console.error('❌ Error in quote summary calculation:', error);
         }
-
-        // Fechar loading e dialog
-        this.store.dispatch(LoadingAction.loading({ message: false }));
-        if (this.ref) {
-          this.ref.close();
-        }
-
-        // SEMPRE recalcular o pagamento
-        this.calculateTotalPayment();
-        
-        // Atualizar store com o total calculado
-        this.store.dispatch(
-          CheckoutActions.selectTotalPayment({ total: this.total() })
-        );
-
-        this.changeDetectorRef.markForCheck();
       },
       (error) => {
         console.error('❌ Error in cart data subscription:', error);
         this.store.dispatch(LoadingAction.loading({ message: false }));
       }
     );
+  }
+
+  private handleCouponUpdate(coupon: any): void {
+    if (coupon && typeof coupon === 'object' && coupon.valor !== undefined && coupon.valor !== null && coupon.valor > 0) {
+      console.log('✅ Valid coupon found:', coupon);
+      this.couponDiscount.set(coupon as DiscountCouponType);
+      
+      // Mostrar mensagem de sucesso apenas se for uma nova aplicação
+      if (!this.hasCouponDiscount()) {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Cupom aplicado!',
+          detail: `Desconto de ${coupon.valor}% aplicado com sucesso.`,
+          life: 3000
+        });
+      }
+    } else {
+      console.log('ℹ️  No valid coupon');
+      this.couponDiscount.set(null);
+      this.couponDiscountValue.set(0);
+    }
+
+    // Fechar loading e dialog
+    this.store.dispatch(LoadingAction.loading({ message: false }));
+    if (this.ref) {
+      this.ref.close();
+    }
   }
 
   checkCurrentRoute(): void {
@@ -510,65 +509,46 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
       maximizable: false
     });
 
-    // Adicionar listener para quando o dialog fechar
     this.ref.onClose.subscribe((result) => {
-      console.log('🎫 Coupon dialog closed with result:', result);
-      if (result) {
-        // Forçar recálculo após fechar o dialog
-        this.calculateTotalPayment();
-      }
-      this.changeDetectorRef.markForCheck();
+      console.log('🎫 Coupon dialog closed');
+      this.changeDetectorRef.detectChanges();
     });
   }
 
   private calculateTotalPayment(): void {
-    let totalCalculado = this.totalPrice();
-  
-    console.log('💰=== INICIANDO CÁLCULO DE PAGAMENTO ===');
-    console.log('Total base:', totalCalculado);
-    console.log('Other categories:', this.otherCategoriesTotal());
-    console.log('Direito Online subtotal:', this.direitoOnlineSubtotal());
-    console.log('Pós-Graduação subtotal:', this.posGraduacaoSubtotal());
-  
-    // 1) aplica regras de desconto de parceiro / pós
-    if (this.hasFreeCourses()) {
-      totalCalculado =
-        this.otherCategoriesTotal() +
-        (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
-      console.log('✅ Após desconto free courses (100% Direito Online):', totalCalculado);
-    } else if (this.hasAffiliatedDiscount() || this.hasPosGraduacaoDiscount()) {
-      totalCalculado =
-        this.otherCategoriesTotal() +
-        (this.direitoOnlineSubtotal() - this.affiliatedDiscountValue()) +
-        (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
-      console.log('✅ Após descontos parceiro/pós:', totalCalculado);
-    } else {
-      console.log('ℹ️  Sem descontos de parceiro/pós aplicáveis');
-    }
-  
-    console.log('💰 Total após descontos iniciais:', totalCalculado);
-    console.log('🎫 Cupom atual:', this.couponDiscount());
-    console.log('🎫 Tem cupom válido?', this.hasCouponDiscount());
-
-    // 2) aplica cupom de desconto sobre o total já calculado
-    const totalAntesCupom = totalCalculado;
-    totalCalculado = this.applyCouponDiscount(totalCalculado);
+    try {
+      let totalCalculado = this.totalPrice();
     
-    // Atualiza o valor do desconto do cupom para exibição
-    const descontoCupom = totalAntesCupom - totalCalculado;
-    this.couponDiscountValue.set(descontoCupom);
-  
-    console.log('💰 Total final após cupom:', totalCalculado);
-    console.log('🎫 Valor do desconto do cupom:', descontoCupom);
-    console.log('💰=== FIM DO CÁLCULO DE PAGAMENTO ===');
-  
-    // 3) atualiza o signal do total
-    this.total.set(totalCalculado);
+      // 1) aplica regras de desconto de parceiro / pós
+      if (this.hasFreeCourses()) {
+        totalCalculado =
+          this.otherCategoriesTotal() +
+          (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
+      } else if (this.hasAffiliatedDiscount() || this.hasPosGraduacaoDiscount()) {
+        totalCalculado =
+          this.otherCategoriesTotal() +
+          (this.direitoOnlineSubtotal() - this.affiliatedDiscountValue()) +
+          (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
+      }
+    
+      // 2) aplica cupom de desconto sobre o total já calculado
+      const totalAntesCupom = totalCalculado;
+      totalCalculado = this.applyCouponDiscount(totalCalculado);
+      
+      // Atualiza o valor do desconto do cupom para exibição
+      const descontoCupom = totalAntesCupom - totalCalculado;
+      this.couponDiscountValue.set(descontoCupom);
+    
+      // 3) atualiza o signal do total
+      this.total.set(totalCalculado);
+    } catch (error) {
+      console.error('❌ Error in calculateTotalPayment:', error);
+      this.total.set(this.totalPrice());
+    }
   }
   
   private applyCouponDiscount(total: number): number {
     if (!this.hasCouponDiscount()) {
-      console.log('ℹ️  Nenhum cupom válido para aplicar desconto');
       return total;
     }
 
@@ -576,21 +556,19 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
     const percentual = coupon!.valor!;
     
     if (percentual <= 0 || percentual > 100) {
-      console.warn('⚠️  Percentual de desconto do cupom inválido:', percentual);
       return total;
     }
   
-    console.log(`🎫 Aplicando cupom de ${percentual}% sobre R$ ${total}`);
-  
     const desconto = (percentual / 100) * total;
     const totalComDesconto = total - desconto;
-    
-    console.log(`🎫 Desconto do cupom: R$ ${desconto}, Total com desconto: R$ ${totalComDesconto}`);
     
     return Math.max(0, totalComDesconto);
   }
 
   ngOnDestroy(): void {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
     if (this.ref) {
       this.ref.close();
     }
