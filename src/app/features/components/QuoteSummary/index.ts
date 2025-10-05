@@ -37,6 +37,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { RippleModule } from 'primeng/ripple';
 import { DialogModule } from 'primeng/dialog';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { MessageService } from 'primeng/api';
 
 import { CouponComponent } from '../Coupon';
 
@@ -168,7 +169,7 @@ import { CouponComponent } from '../Coupon';
             <span>- {{ posGraduacaoDiscountValue() | currency }}</span>
           </div>
           <div *ngIf="hasCouponDiscount()" class="flex justify-content-between text-orange-600">
-            <span>Desconto Cupom ({{ couponDiscount()?.valor }}%):</span>
+            <span>Desconto Cupom ({{ getCouponDiscountPercent() }}%):</span>
             <span>- {{ getCouponDiscountValue() | currency }}</span>
           </div>
           <div class="flex justify-content-between font-bold">
@@ -196,7 +197,7 @@ import { CouponComponent } from '../Coupon';
         class="flex justify-content-between text-orange-600"
       >
         <strong> Cupom de desconto </strong>
-        <span>- {{ couponDiscount()?.valor }} %</span>
+        <span>- {{ getCouponDiscountPercent() }} %</span>
       </div>
     </ng-template>
 
@@ -223,6 +224,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   private dialogService = inject(DialogService);
   private changeDetectorRef = inject(ChangeDetectorRef);
   private router = inject(Router);
+  private messageService = inject(MessageService);
 
   ref: DynamicDialogRef | undefined;
 
@@ -291,7 +293,13 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   // Verificar se há cupom de desconto aplicado
   hasCouponDiscount(): boolean {
     const coupon = this.couponDiscount();
-    return !!coupon && coupon.valor !== undefined && coupon.valor !== null && coupon.valor > 0;
+    return !!(coupon && coupon.valor !== undefined && coupon.valor !== null && coupon.valor > 0);
+  }
+
+  // Obter percentual do cupom
+  getCouponDiscountPercent(): number {
+    const coupon = this.couponDiscount();
+    return coupon?.valor || 0;
   }
 
   // Calcular horas totais apenas dos cursos Direito Online
@@ -368,13 +376,18 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         cartTotalHours,
         userDetails
       ]) => {
-        console.log('Cart data updated:', { totalPrice, items, coupon, availableHours, cartTotalHours });
+        console.log('🛒 Cart data updated:', { 
+          totalPrice, 
+          itemsCount: items?.length,
+          coupon: coupon,
+          availableHours 
+        });
         
-        this.totalPrice.set(totalPrice);
-        this.totalItems.set(items.length);
-        this.cartItems.set(items);
+        this.totalPrice.set(totalPrice || 0);
+        this.totalItems.set(items?.length || 0);
+        this.cartItems.set(items || []);
         this.availableHours.set(availableHours || 0);
-        this.cartTotalHours.set(cartTotalHours);
+        this.cartTotalHours.set(cartTotalHours || 0);
         
         // CALCULAR VALORES DETALHADOS
         this.direitoOnlineTotalHours.set(this.calculateDireitoOnlineTotalHours());
@@ -396,11 +409,6 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
           
           if (!user.parceiro) {
             this.isRegularUser.set(true);
-            this.hasFreeCourses.set(false);
-            this.hasAffiliatedDiscount.set(false);
-            this.isNonAffiliatedPartner.set(false);
-            this.isAffiliatedPartner.set(false);
-            this.partnerName.set('');
           }
           else if (user.parceiro) {
             this.isRegularUser.set(false);
@@ -435,25 +443,39 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
           this.posGraduacaoDiscountValue.set(this.posGraduacaoSubtotal() * discountPercent);
         }
 
-        // ATUALIZAR CUPOM - CORREÇÃO PRINCIPAL
-        console.log('Coupon received from store:', coupon);
+        // TRATAMENTO DO CUPOM - CORREÇÃO PRINCIPAL
+        console.log('🎫 Coupon received from store:', coupon);
         
-        if (coupon && coupon.valor !== undefined && coupon.valor !== null) {
-          console.log('Setting valid coupon:', coupon);
-          this.couponDiscount.set(coupon);
-          this.store.dispatch(LoadingAction.loading({ message: false }));
-          
-          // Fechar dialog se estiver aberto
-          if (this.ref) {
-            this.ref.close();
+        if (coupon && typeof coupon === 'object' && 'valor' in coupon) {
+          const couponValue = (coupon as any).valor;
+          if (couponValue !== undefined && couponValue !== null && couponValue > 0) {
+            console.log('✅ Setting valid coupon:', coupon);
+            this.couponDiscount.set(coupon as DiscountCouponType);
+            
+            // Mostrar mensagem de sucesso
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Cupom aplicado!',
+              detail: `Desconto de ${couponValue}% aplicado com sucesso.`
+            });
+          } else {
+            console.log('❌ Invalid coupon value:', couponValue);
+            this.couponDiscount.set(null);
+            this.couponDiscountValue.set(0);
           }
         } else {
-          console.log('No valid coupon found, resetting...');
+          console.log('❌ No valid coupon object found');
           this.couponDiscount.set(null);
           this.couponDiscountValue.set(0);
         }
 
-        // SEMPRE recalcular o pagamento após qualquer atualização
+        // Fechar loading e dialog
+        this.store.dispatch(LoadingAction.loading({ message: false }));
+        if (this.ref) {
+          this.ref.close();
+        }
+
+        // SEMPRE recalcular o pagamento
         this.calculateTotalPayment();
         
         // Atualizar store com o total calculado
@@ -462,6 +484,10 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         );
 
         this.changeDetectorRef.markForCheck();
+      },
+      (error) => {
+        console.error('❌ Error in cart data subscription:', error);
+        this.store.dispatch(LoadingAction.loading({ message: false }));
       }
     );
   }
@@ -471,15 +497,13 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe(() => {
         const currentRoute = this.router.url;
-        if (currentRoute !== '/carrinho-de-compras') {
-          this.disabledCouponButton.set(true);
-        }
+        this.disabledCouponButton.set(currentRoute !== '/carrinho-de-compras');
       });
   }
 
   handleCouponModal(): void {
     this.ref = this.dialogService.open(CouponComponent, {
-      header: 'Cupom',
+      header: 'Cupom de Desconto',
       contentStyle: { overflow: 'auto' },
       styleClass: 'w-10 sm:w-9 mg:w-7 lg:w-5',
       baseZIndex: 10000,
@@ -487,8 +511,12 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
     });
 
     // Adicionar listener para quando o dialog fechar
-    this.ref.onClose.subscribe(() => {
-      console.log('Coupon dialog closed');
+    this.ref.onClose.subscribe((result) => {
+      console.log('🎫 Coupon dialog closed with result:', result);
+      if (result) {
+        // Forçar recálculo após fechar o dialog
+        this.calculateTotalPayment();
+      }
       this.changeDetectorRef.markForCheck();
     });
   }
@@ -496,64 +524,68 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   private calculateTotalPayment(): void {
     let totalCalculado = this.totalPrice();
   
-    console.log('=== INICIANDO CÁLCULO DE PAGAMENTO ===');
+    console.log('💰=== INICIANDO CÁLCULO DE PAGAMENTO ===');
     console.log('Total base:', totalCalculado);
-    console.log('Has free courses:', this.hasFreeCourses());
-    console.log('Has affiliated discount:', this.hasAffiliatedDiscount());
-    console.log('Has pos graduacao discount:', this.hasPosGraduacaoDiscount());
-    console.log('Coupon discount:', this.couponDiscount());
+    console.log('Other categories:', this.otherCategoriesTotal());
+    console.log('Direito Online subtotal:', this.direitoOnlineSubtotal());
+    console.log('Pós-Graduação subtotal:', this.posGraduacaoSubtotal());
   
     // 1) aplica regras de desconto de parceiro / pós
     if (this.hasFreeCourses()) {
       totalCalculado =
         this.otherCategoriesTotal() +
         (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
-      console.log('Após desconto free courses:', totalCalculado);
+      console.log('✅ Após desconto free courses (100% Direito Online):', totalCalculado);
     } else if (this.hasAffiliatedDiscount() || this.hasPosGraduacaoDiscount()) {
       totalCalculado =
         this.otherCategoriesTotal() +
         (this.direitoOnlineSubtotal() - this.affiliatedDiscountValue()) +
         (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
-      console.log('Após descontos parceiro/pós:', totalCalculado);
+      console.log('✅ Após descontos parceiro/pós:', totalCalculado);
+    } else {
+      console.log('ℹ️  Sem descontos de parceiro/pós aplicáveis');
     }
   
-    console.log('Total após descontos iniciais:', totalCalculado);
-  
+    console.log('💰 Total após descontos iniciais:', totalCalculado);
+    console.log('🎫 Cupom atual:', this.couponDiscount());
+    console.log('🎫 Tem cupom válido?', this.hasCouponDiscount());
+
     // 2) aplica cupom de desconto sobre o total já calculado
     const totalAntesCupom = totalCalculado;
     totalCalculado = this.applyCouponDiscount(totalCalculado);
     
     // Atualiza o valor do desconto do cupom para exibição
-    this.couponDiscountValue.set(totalAntesCupom - totalCalculado);
+    const descontoCupom = totalAntesCupom - totalCalculado;
+    this.couponDiscountValue.set(descontoCupom);
   
-    console.log('Total final após cupom:', totalCalculado);
-    console.log('=== FIM DO CÁLCULO DE PAGAMENTO ===');
+    console.log('💰 Total final após cupom:', totalCalculado);
+    console.log('🎫 Valor do desconto do cupom:', descontoCupom);
+    console.log('💰=== FIM DO CÁLCULO DE PAGAMENTO ===');
   
     // 3) atualiza o signal do total
     this.total.set(totalCalculado);
   }
   
   private applyCouponDiscount(total: number): number {
-    const couponDiscount = this.couponDiscount();
-    
     if (!this.hasCouponDiscount()) {
-      console.log('Nenhum cupom válido encontrado para aplicar desconto');
+      console.log('ℹ️  Nenhum cupom válido para aplicar desconto');
       return total;
     }
 
-    const percentual = couponDiscount!.valor!;
+    const coupon = this.couponDiscount();
+    const percentual = coupon!.valor!;
     
     if (percentual <= 0 || percentual > 100) {
-      console.warn('Percentual de desconto do cupom inválido:', percentual);
+      console.warn('⚠️  Percentual de desconto do cupom inválido:', percentual);
       return total;
     }
   
-    console.log(`Aplicando cupom de ${percentual}% sobre R$ ${total}`);
+    console.log(`🎫 Aplicando cupom de ${percentual}% sobre R$ ${total}`);
   
     const desconto = (percentual / 100) * total;
     const totalComDesconto = total - desconto;
     
-    console.log(`Desconto do cupom: R$ ${desconto}, Total com desconto: R$ ${totalComDesconto}`);
+    console.log(`🎫 Desconto do cupom: R$ ${desconto}, Total com desconto: R$ ${totalComDesconto}`);
     
     return Math.max(0, totalComDesconto);
   }
