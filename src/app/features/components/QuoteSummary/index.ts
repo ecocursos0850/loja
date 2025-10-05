@@ -105,7 +105,7 @@ import { CouponComponent } from '../Coupon';
         <!-- Cupom de desconto -->
         <ng-container
           *ngIf="
-            !couponDiscount()?.valor;
+            !hasCouponDiscount();
             then insertCouponValue;
             else hasCouponValue
           "
@@ -167,7 +167,7 @@ import { CouponComponent } from '../Coupon';
             <span>Desconto {{ getPosGraduacaoDiscountPercent() }}% Pós-Graduação:</span>
             <span>- {{ posGraduacaoDiscountValue() | currency }}</span>
           </div>
-          <div *ngIf="couponDiscount()?.valor" class="flex justify-content-between text-orange-600">
+          <div *ngIf="hasCouponDiscount()" class="flex justify-content-between text-orange-600">
             <span>Desconto Cupom ({{ couponDiscount()?.valor }}%):</span>
             <span>- {{ getCouponDiscountValue() | currency }}</span>
           </div>
@@ -250,7 +250,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   freeCoursesDiscountValue = signal<number>(0);
   affiliatedDiscountValue = signal<number>(0);
   posGraduacaoDiscountValue = signal<number>(0);
-  couponDiscountValue = signal<number>(0); // NOVO: valor do desconto do cupom
+  couponDiscountValue = signal<number>(0);
 
   // Método para verificar se um curso é da categoria Direito Online
   private isDireitoOnlineCourse(item: CartType): boolean {
@@ -281,11 +281,16 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   // Obter percentual de desconto para PÓS-GRADUAÇÃO
   getPosGraduacaoDiscountPercent(): number {
     if (this.isNonAffiliatedPartner()) {
-      return 20; // 20% para parceiros NÃO conveniados
+      return 20;
     } else if (this.isAffiliatedPartner()) {
-      return 10; // 10% para parceiros conveniados
+      return 10;
     }
     return 0;
+  }
+
+  // Verificar se há cupom de desconto aplicado
+  hasCouponDiscount(): boolean {
+    return !!this.couponDiscount()?.valor;
   }
 
   // Calcular horas totais apenas dos cursos Direito Online
@@ -328,7 +333,9 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
   // Mostrar detalhamento de preços quando aplicável
   showPriceBreakdown(): boolean {
-    return this.hasAnyDireitoOnlineCourse() || this.hasAnyPosGraduacaoCourse() || this.couponDiscount()?.valor;
+    return this.hasAnyDireitoOnlineCourse() || 
+           this.hasAnyPosGraduacaoCourse() || 
+           this.hasCouponDiscount();
   }
 
   // Calcular valor do desconto do cupom para exibição
@@ -384,7 +391,6 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         if (userDetails && userDetails.length > 0) {
           const user = userDetails[0];
           
-          // REGRA 1: Usuário regular (sem parceiro) - SEM DESCONTO
           if (!user.parceiro) {
             this.isRegularUser.set(true);
             this.hasFreeCourses.set(false);
@@ -393,23 +399,19 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
             this.isAffiliatedPartner.set(false);
             this.partnerName.set('');
           }
-          // REGRA 2: Usuário com parceiro
           else if (user.parceiro) {
             this.isRegularUser.set(false);
             this.partnerName.set(user.parceiro.nome || '');
             
             if (user.parceiro.isParceiro === true) {
-              // REGRA 2A: Parceiro NÃO conveniado (isParceiro = true)
               this.isNonAffiliatedPartner.set(true);
               this.isAffiliatedPartner.set(false);
               this.hasAffiliatedDiscount.set(false);
-              // Só aplica gratuidade se houver cursos Direito Online E horas suficientes
               this.hasFreeCourses.set(
                 this.hasEnoughHoursForDireitoOnline() && 
                 this.hasAnyDireitoOnlineCourse()
               );
             } else if (user.parceiro.isParceiro === false) {
-              // REGRA 2B: Parceiro conveniado (isParceiro = false)
               this.isNonAffiliatedPartner.set(false);
               this.isAffiliatedPartner.set(true);
               this.hasAffiliatedDiscount.set(this.hasAnyDireitoOnlineCourse());
@@ -420,26 +422,22 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
         // CALCULAR VALORES DE DESCONTO
         if (this.hasFreeCourses()) {
-          // Desconto de 100% nos cursos Direito Online
           this.freeCoursesDiscountValue.set(this.direitoOnlineSubtotal());
         } else if (this.hasAffiliatedDiscount()) {
-          // Desconto de 10% nos cursos Direito Online
           this.affiliatedDiscountValue.set(this.direitoOnlineSubtotal() * 0.1);
         }
 
-        // Calcular desconto para PÓS-GRADUAÇÃO
         if (this.hasPosGraduacaoDiscount()) {
           const discountPercent = this.getPosGraduacaoDiscountPercent() / 100;
           this.posGraduacaoDiscountValue.set(this.posGraduacaoSubtotal() * discountPercent);
         }
 
-        // ATUALIZAR CUPOM E RECALCULAR - CORREÇÃO PRINCIPAL
+        // ATUALIZAR CUPOM E RECALCULAR
         if (coupon) {
           this.couponDiscount.set(coupon);
           this.store.dispatch(LoadingAction.loading({ message: false }));
           this.ref?.close();
           
-          // FORÇAR RECÁLCULO IMEDIATO DO TOTAL COM O CUPOM
           setTimeout(() => {
             this.calculateTotalPayment();
           }, 0);
@@ -501,7 +499,6 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
     const totalAntesCupom = totalCalculado;
     totalCalculado = this.applyCouponDiscount(totalCalculado);
     
-    // Atualiza o valor do desconto do cupom para exibição
     this.couponDiscountValue.set(totalAntesCupom - totalCalculado);
   
     console.log('Total após cupom:', totalCalculado);
@@ -513,7 +510,6 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   private applyCouponDiscount(total: number): number {
     const couponDiscount = this.couponDiscount();
     
-    // Verifica se existe um cupom válido com valor definido
     if (!couponDiscount?.valor) {
       console.log('Nenhum cupom válido encontrado');
       return total;
@@ -521,7 +517,6 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   
     const percentual = couponDiscount.valor;
     
-    // Validação adicional para garantir que o percentual é válido
     if (percentual <= 0 || percentual > 100) {
       console.warn('Percentual de desconto do cupom inválido:', percentual);
       return total;
@@ -534,7 +529,6 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
     
     console.log(`Desconto: R$ ${desconto}, Total com desconto: R$ ${totalComDesconto}`);
     
-    // Garante que o valor não fique negativo
     return Math.max(0, totalComDesconto);
   }
 
