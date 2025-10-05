@@ -7,7 +7,7 @@ import {
   OnInit,
   signal
 } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import {
   cartItemsSelector,
   cartTotalHoursSelector,
@@ -21,12 +21,12 @@ import { DiscountCouponType } from '@shared/models/classes/ticket.interface.mode
 import {
   userDetailsAvailableHoursSelect,
   userDetailsDiscountSelect,
-  userDetailsSelect
+  userDetailsPartner
 } from '@shared/store/reducers/user-details.reducer';
 import { CheckoutActions } from '@shared/store/actions/checkout.actions';
 import { CartType } from '@shared/models/classes/cart-market.model';
 
-import { combineLatest } from 'rxjs';
+import { combineLatest, filter } from 'rxjs';
 
 import { DividerModule } from 'primeng/divider';
 import { ButtonModule } from 'primeng/button';
@@ -78,29 +78,31 @@ import { CouponComponent } from '../Coupon';
           <span>{{ totalPrice() | currency }}</span>
         </div>
         
-        <!-- Desconto 100% para parceiros NÃO conveniados -->
         <div *ngIf="hasFreeCourses()" class="line-height-4 flex justify-content-between text-green-600">
           <strong>Desconto Parceiro (Horas Gratuitas)</strong>
-          <span>- {{ freeCoursesDiscountValue() | currency }}</span>
+          <span>-100%</span>
         </div>
         
-        <!-- Desconto de 10% para parceiros conveniados -->
-        <div *ngIf="hasAffiliatedDiscount() && !hasFreeCourses()" class="line-height-4 flex justify-content-between text-blue-600">
-          <strong>Desconto Parceiro (10%)</strong>
-          <span>- {{ affiliatedDiscountValue() | currency }}</span>
+        <div
+          *ngIf="!hasFreeCourses()"
+          [ngClass]="hasFreeCourses() ? 'text-gray-400' : ''"
+          class="line-height-4 flex justify-content-between"
+        >
+          <strong>Descontos</strong>
+          <span>
+            {{ discountPercent() > 0 ? '-' : '' }}
+            {{ discountPercent() | percent }}</span
+          >
         </div>
 
-        <!-- Desconto Pós -->
-        <div *ngIf="hasPosGraduacaoDiscount()" class="line-height-4 flex justify-content-between text-purple-600">
-          <strong>Desconto Pós-Graduação/MBA ({{ getPosGraduacaoDiscountPercent() }}%)</strong>
-          <span>- {{ posGraduacaoDiscountValue() | currency }}</span>
-        </div>
-
-        <!-- Cupom -->
-        <div *ngIf="couponDiscount()?.valor" class="flex justify-content-between text-orange-600">
-          <strong>Cupom de desconto</strong>
-          <span>- {{ couponDiscount()?.valor }}%</span>
-        </div>
+        <ng-container
+          *ngIf="
+            !couponDiscount()?.valor;
+            then insertCouponValue;
+            else hasCouponValue
+          "
+        >
+        </ng-container>
       </div>
       <p-divider />
       <div
@@ -112,21 +114,41 @@ import { CouponComponent } from '../Coupon';
       </div>
 
       <div
+        *ngIf="!showButtonBack()"
         class="w-full mt-2 flex justify-content-center"
       >
         <p-button
-          (click)="handleCouponModal()"
-          size="small"
-          [text]="true"
-          class="w-full"
-          styleClass="pl-0"
-          icon="pi pi-ticket"
-          pRipple
-          label="Inserir cupom de desconto"
-        >
-        </p-button>
+          [routerLink]="'/carrinho-de-compras'"
+          styleClass="p-button-link text-sm"
+          label="Vizualizar carrinho"
+        />
       </div>
     </div>
+
+    <ng-template #hasCouponValue>
+      <div
+        [ngClass]="hasFreeCourses() ? 'text-gray-400' : ''"
+        class="flex justify-content-between"
+      >
+        <strong> Cupom de desconto </strong>
+        <span>- {{ couponDiscount()?.valor }} %</span>
+      </div>
+    </ng-template>
+
+    <ng-template #insertCouponValue>
+      <p-button
+        (click)="handleCouponModal()"
+        [disabled]="hasFreeCourses() || disabledCouponButton()"
+        size="small"
+        [text]="true"
+        class="w-full"
+        styleClass="pl-0"
+        icon="pi pi-ticket"
+        pRipple
+        label="Inserir cupom de desconto"
+      >
+      </p-button>
+    </ng-template>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [DialogService]
@@ -143,26 +165,18 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   totalItems = signal<number>(0);
   total = signal<number>(0);
   couponDiscount = signal(new DiscountCouponType());
+  showButtonBack = signal<boolean>(true);
+  disabledCouponButton = signal<boolean>(false);
+  discountPercent = signal<number>(0);
   hasFreeCourses = signal<boolean>(false);
-  hasAffiliatedDiscount = signal<boolean>(false);
-  isRegularUser = signal<boolean>(true);
-  isNonAffiliatedPartner = signal<boolean>(false);
-  isAffiliatedPartner = signal<boolean>(false);
+  isPartner = signal<boolean>(false);
   availableHours = signal<number>(0);
   cartTotalHours = signal<number>(0);
-  partnerName = signal<string>('');
-  cartItems = signal<CartType[]>([]);
-  direitoOnlineTotalHours = signal<number>(0);
-
-  direitoOnlineSubtotal = signal<number>(0);
-  posGraduacaoSubtotal = signal<number>(0);
-  otherCategoriesTotal = signal<number>(0);
-  freeCoursesDiscountValue = signal<number>(0);
-  affiliatedDiscountValue = signal<number>(0);
-  posGraduacaoDiscountValue = signal<number>(0);
+  isAllLawOnline = signal<boolean>(false);
 
   ngOnInit(): void {
     this.getCartData();
+    this.checkCurrentRoute();
   }
 
   getCartData(): void {
@@ -173,35 +187,56 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
       this.store.select(userDetailsDiscountSelect),
       this.store.select(userDetailsAvailableHoursSelect),
       this.store.select(cartTotalHoursSelector),
-      this.store.select(userDetailsSelect)
+      this.store.select(userDetailsPartner)
     ]).subscribe(
       ([
         totalPrice,
         items,
         coupon,
-        ,
+        discountPercent,
         availableHours,
         cartTotalHours,
-        userDetails
+        userDetailsPartner
       ]) => {
-        this.totalPrice.set(totalPrice);
+        this.totalPrice.update(() => totalPrice);
         this.totalItems.set(items.length);
-        this.cartItems.set(items);
         this.availableHours.set(availableHours || 0);
         this.cartTotalHours.set(cartTotalHours);
 
-        // Calcular subtotais
-        this.calculateSubtotals();
+        // Verificar se é parceiro
+        this.isPartner.set(userDetailsPartner !== null && userDetailsPartner !== undefined);
 
-        // aplicar cupom
+        // Verificar se todos os cursos são DIREITO ONLINE (ID 3)
+        this.isAllLawOnline.set(items.every(item => item.categoria.id === 3));
+
+        // Lógica corrigida para determinar se os cursos são gratuitos
+        // Só aplica se forem todos cursos DIREITO ONLINE (ID 3)
+        this.hasFreeCourses.update(() => {
+          return this.isPartner() && 
+                 this.isAllLawOnline() &&
+                 this.availableHours() > 0 && 
+                 this.cartTotalHours() <= this.availableHours();
+        });
+
         if (coupon) {
-          this.couponDiscount.set(coupon);
+          this.couponDiscount.update(() => coupon);
           this.store.dispatch(LoadingAction.loading({ message: false }));
           this.ref?.close();
         }
 
-        this.calculateTotalPayment();
+        this.discountPercent.update(() => {
+          return this.hasFreeCourses() ? 1 : Number(discountPercent) / 100;
+        });
 
+        const couponValue = this.couponDiscount()?.valor || 0;
+        const couponDiscountAmount = Number((this.totalPrice() * couponValue) / 100) || 0;
+
+        this.calculateTotalPayment(
+          this.totalPrice(),
+          couponDiscountAmount,
+          this.discountPercent()
+        );
+        
         this.store.dispatch(
           CheckoutActions.selectTotalPayment({ total: this.total() })
         );
@@ -211,90 +246,43 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
     );
   }
 
+  checkCurrentRoute(): void {
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => {
+        const currentRoute = this.router.url;
+        if (currentRoute !== '/carrinho-de-compras') {
+          this.disabledCouponButton.update(() => true);
+        }
+      });
+  }
+
   handleCouponModal(): void {
     this.ref = this.dialogService.open(CouponComponent, {
       header: 'Cupom',
       contentStyle: { overflow: 'auto' },
       styleClass: 'w-10 sm:w-9 mg:w-7 lg:w-5',
-      baseZIndex: 10000
+      baseZIndex: 10000,
+      maximizable: false
     });
   }
 
-  private calculateSubtotals(): void {
-    const items = this.cartItems();
-
-    this.direitoOnlineSubtotal.set(
-      items
-        .filter(item => item.categoria?.titulo?.toLowerCase().includes('direito online'))
-        .reduce((acc, item) => acc + (item.preco || 0), 0)
-    );
-
-    this.posGraduacaoSubtotal.set(
-      items
-        .filter(item => {
-          const titulo = item.categoria?.titulo?.toLowerCase() || '';
-          return titulo.includes('pós') || titulo.includes('mba');
-        })
-        .reduce((acc, item) => acc + (item.preco || 0), 0)
-    );
-
-    this.otherCategoriesTotal.set(
-      items
-        .filter(item => {
-          const titulo = item.categoria?.titulo?.toLowerCase() || '';
-          return !titulo.includes('direito online') && !titulo.includes('pós') && !titulo.includes('mba');
-        })
-        .reduce((acc, item) => acc + (item.preco || 0), 0)
-    );
-
-    // Aplicar descontos fixos de parceiro (se houver)
-    this.freeCoursesDiscountValue.set(this.direitoOnlineSubtotal());
-    this.affiliatedDiscountValue.set(this.direitoOnlineSubtotal() * 0.1);
-    this.posGraduacaoDiscountValue.set(this.posGraduacaoSubtotal() * this.getPosGraduacaoDiscountPercent() / 100);
-  }
-
-  private calculateTotalPayment(): void {
-    let totalCalculado = 0;
-
+  private calculateTotalPayment(
+    total: number,
+    couponDiscount: number,
+    discountPercent: number
+  ): void {
     if (this.hasFreeCourses()) {
-      totalCalculado = this.otherCategoriesTotal() + (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
-    } else if (this.hasAffiliatedDiscount() || this.hasPosGraduacaoDiscount()) {
-      totalCalculado = this.otherCategoriesTotal() +
-        (this.direitoOnlineSubtotal() - this.affiliatedDiscountValue()) +
-        (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
-    } else {
-      totalCalculado = this.totalPrice();
+      // Se os cursos são gratuitos, total = 0
+      this.total.set(0);
+      return;
     }
 
-    // aplica desconto do cupom sobre o total final
-    if (this.couponDiscount()?.valor) {
-      const desconto = (this.couponDiscount().valor / 100) * totalCalculado;
-      totalCalculado -= desconto;
-    }
-
-    this.total.set(totalCalculado);
-  }
-
-  // 🔹 NOVOS MÉTODOS PARA O DESCONTO DE PÓS-GRADUAÇÃO
-  hasPosGraduacaoDiscount(): boolean {
-    return this.hasAnyPosGraduacaoCourse() && (this.isNonAffiliatedPartner() || this.isAffiliatedPartner());
-  }
-
-  getPosGraduacaoDiscountPercent(): number {
-    if (this.isNonAffiliatedPartner()) {
-      return 20; // 20% para parceiros NÃO conveniados
-    } else if (this.isAffiliatedPartner()) {
-      return 10; // 10% para parceiros conveniados
-    }
-    return 0;
-  }
-
-  // 🔹 MÉTODO DE APOIO
-  private hasAnyPosGraduacaoCourse(): boolean {
-    return this.cartItems().some(item => {
-      const titulo = item.categoria?.titulo?.toLowerCase() || '';
-      return titulo.includes('pós') || titulo.includes('mba');
-    });
+    // Cálculo normal para quando não são gratuitos
+    const priceAfterCoupon = total - couponDiscount;
+    const finalPrice = priceAfterCoupon - (priceAfterCoupon * discountPercent);
+    
+    this.total.set(Math.max(0, finalPrice)); // Garante que não seja negativo
   }
 
   ngOnDestroy(): void {
