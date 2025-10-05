@@ -184,11 +184,14 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         cartTotalHours,
         userDetails
       ]) => {
-        this.totalPrice.update(() => totalPrice);
+        this.totalPrice.set(totalPrice);
         this.totalItems.set(items.length);
         this.cartItems.set(items);
         this.availableHours.set(availableHours || 0);
         this.cartTotalHours.set(cartTotalHours);
+
+        // Calcular subtotais
+        this.calculateSubtotals();
 
         // aplicar cupom
         if (coupon) {
@@ -217,25 +220,56 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
     });
   }
 
-  private calculateTotalPayment(): void {
-    let totalCalculado = this.totalPrice();
+  private calculateSubtotals(): void {
+    const items = this.cartItems();
 
-    // aplica regras já existentes
+    this.direitoOnlineSubtotal.set(
+      items
+        .filter(item => item.categoria?.titulo?.toLowerCase().includes('direito online'))
+        .reduce((acc, item) => acc + (item.preco || 0), 0)
+    );
+
+    this.posGraduacaoSubtotal.set(
+      items
+        .filter(item => {
+          const titulo = item.categoria?.titulo?.toLowerCase() || '';
+          return titulo.includes('pós') || titulo.includes('mba');
+        })
+        .reduce((acc, item) => acc + (item.preco || 0), 0)
+    );
+
+    this.otherCategoriesTotal.set(
+      items
+        .filter(item => {
+          const titulo = item.categoria?.titulo?.toLowerCase() || '';
+          return !titulo.includes('direito online') && !titulo.includes('pós') && !titulo.includes('mba');
+        })
+        .reduce((acc, item) => acc + (item.preco || 0), 0)
+    );
+
+    // Aplicar descontos fixos de parceiro (se houver)
+    this.freeCoursesDiscountValue.set(this.direitoOnlineSubtotal());
+    this.affiliatedDiscountValue.set(this.direitoOnlineSubtotal() * 0.1);
+    this.posGraduacaoDiscountValue.set(this.posGraduacaoSubtotal() * this.getPosGraduacaoDiscountPercent() / 100);
+  }
+
+  private calculateTotalPayment(): void {
+    let totalCalculado = 0;
+
     if (this.hasFreeCourses()) {
-      totalCalculado =
-        this.otherCategoriesTotal() +
-        (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
+      totalCalculado = this.otherCategoriesTotal() + (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
     } else if (this.hasAffiliatedDiscount() || this.hasPosGraduacaoDiscount()) {
-      totalCalculado =
-        this.otherCategoriesTotal() +
+      totalCalculado = this.otherCategoriesTotal() +
         (this.direitoOnlineSubtotal() - this.affiliatedDiscountValue()) +
         (this.posGraduacaoSubtotal() - this.posGraduacaoDiscountValue());
+    } else {
+      totalCalculado = this.totalPrice();
     }
 
-    // aplica desconto do cupom
+    // aplica desconto do cupom sobre o total final
     if (this.couponDiscount()?.valor) {
       const desconto = (this.couponDiscount().valor / 100) * totalCalculado;
-      totalCalculado = totalCalculado - desconto;
+      totalCalculado -= desconto;
     }
 
     this.total.set(totalCalculado);
@@ -255,12 +289,12 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
     return 0;
   }
 
-  // 🔹 MÉTODO DE APOIO (ajuste conforme sua regra de negócio real)
+  // 🔹 MÉTODO DE APOIO
   private hasAnyPosGraduacaoCourse(): boolean {
-    return this.cartItems().some(item =>
-      item.categoria?.toLowerCase().includes('pós') ||
-      item.categoria?.toLowerCase().includes('mba')
-    );
+    return this.cartItems().some(item => {
+      const titulo = item.categoria?.titulo?.toLowerCase() || '';
+      return titulo.includes('pós') || titulo.includes('mba');
+    });
   }
 
   ngOnDestroy(): void {
