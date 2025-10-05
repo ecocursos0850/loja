@@ -24,28 +24,29 @@ export class CoursesEffect {
     this.actions$.pipe(
       ofType(CoursesActions.enter),
       switchMap(() =>
-        this.courseService.getAllCourses().pipe(
-          map((courseData: CourseType[]) => {
-            return CoursesApiActions.courseLoadedSuccess({
-              courses: courseData
-            });
-          }),
-          tap(() => {
-            this.store.dispatch(LoadingAction.loading({ message: false }));
-          }),
-          catchError((err: HttpErrorResponse) => {
-            console.error('Erro no effect:', err);
-            this.store.dispatch(LoadingAction.loading({ message: false }));
-            this.store.dispatch(
-              MessageAction.sendMessage({
-                message: {
-                  severity: 'Error',
-                  detail: `Erro ao tentar carregar cursos: ${err.message}`
-                }
-              })
-            );
-            return of(CoursesApiActions.courseLoadedFailed({ error: err }));
-          })
+        from(
+          this.courseService.getAllCourses().pipe(
+            map((courseData: CourseType[]) => {
+              return CoursesApiActions.courseLoadedSuccess({
+                courses: courseData
+              });
+            }),
+            tap(() => {
+              this.store.dispatch(LoadingAction.loading({ message: false }));
+            }),
+            catchError((err: HttpErrorResponse) => {
+              this.store.dispatch(LoadingAction.loading({ message: false }));
+              this.store.dispatch(
+                MessageAction.sendMessage({
+                  message: {
+                    severity: 'Error',
+                    detail: `Erro ao tentar carregar cursos`
+                  }
+                })
+              );
+              return of(CoursesApiActions.courseLoadedFailed({ error: err }));
+            })
+          )
         )
       )
     )
