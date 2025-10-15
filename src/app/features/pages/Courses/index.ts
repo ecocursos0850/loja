@@ -1,452 +1,277 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { AppMenuitemComponent } from '@shared/components/MenuItem';
-import { CommonModule, CurrencyPipe, NgForOf, NgIf } from '@angular/common';
-import { AppMenuComponent } from '@shared/components/Menu';
-import { LayoutComponent } from '@shared/components/Layout';
-import { ActivatedRoute, Router } from '@angular/router';
-import { PaginatorComponent } from '@shared/components/Paginator';
-import {
-  courseSelectorCollectionLength,
-  courseSelectorPaginatorCollectionLength,
-  coursesPaginatorAllItemsSelector,
-  coursesPaginatorSearchItemsSelector,
-  coursesPaginatorWithFilterSelector
-} from '@shared/store/reducers/courses.reducer';
-import { LoadingAction } from '@shared/store/actions/loading.actions';
-import { CoursesActions } from '@shared/store/actions/courses.actions';
-import {
-  CourseType,
-  MaterialType
-} from '@shared/models/interface/course.interface';
-import { CartType } from '@shared/models/classes/cart-market.model';
-import { CartActions } from '@shared/store/actions/cart.actions';
-import { cartItemsSelector } from '@shared/store/reducers/cart.reducer';
-import { CourseTypeEnum } from '@shared/models/enum/course-type.enum';
-import { GetDirectoryImage } from '@shared/pipes/convert-base64.pipe';
-import { MaterialTypeEnum } from '@shared/models/enum/material-type.enum';
-import { userDetailsSelect } from '@shared/store/reducers/user-details.reducer';
-import { PaginatorModel } from '@shared/models/classes/paginator.model';
-import { Constants } from '@shared/utils/constants';
+import { Component, OnDestroy, Renderer2, ViewChild, Input } from '@angular/core';
+import { NgClass, NgIf } from '@angular/common';
+import { LayoutService } from '@shared/services/layout.service';
+import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { courseSelectorCollection } from '@shared/store/reducers/courses.reducer';
 
-import { combineLatest, of, switchMap, tap } from 'rxjs';
+import { filter, Subscription } from 'rxjs';
 
-import { MenuItem } from 'primeng/api';
-import { PanelMenuModule } from 'primeng/panelmenu';
-import { DividerModule } from 'primeng/divider';
-import { TreeModule } from 'primeng/tree';
-import { SlideMenuModule } from 'primeng/slidemenu';
 import { ButtonModule } from 'primeng/button';
 import { RippleModule } from 'primeng/ripple';
-import { AnimateModule } from 'primeng/animate';
-import { InputTextModule } from 'primeng/inputtext';
 import { Store } from '@ngrx/store';
-import { TagModule } from 'primeng/tag';
-import { DataViewModule } from 'primeng/dataview';
+import { SkeletonModule } from 'primeng/skeleton';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
 
 import { SidebarComponent } from '../../../core/components/Sidebar';
-import { NoImageComponent } from '../../../shared/components/NoImage/index';
-import { NoDataComponent } from '../../../shared/components/NoData/index';
 
 @Component({
-  selector: 'page-courses',
+  selector: 'app-layout',
   standalone: true,
   imports: [
-    PanelMenuModule,
-    DataViewModule,
-    DividerModule,
-    TreeModule,
-    SlideMenuModule,
-    AppMenuitemComponent,
-    NgForOf,
-    NgIf,
+    NgClass,
     SidebarComponent,
-    AppMenuComponent,
-    CommonModule,
-    LayoutComponent,
+    ProgressSpinnerModule,
     ButtonModule,
+    SkeletonModule,
+    RouterOutlet,
     RippleModule,
-    AnimateModule,
-    InputTextModule,
-    PaginatorComponent,
-    CurrencyPipe,
-    TagModule,
-    NoImageComponent,
-    NoDataComponent,
-    GetDirectoryImage
+    NgIf
   ],
   template: `
-    <div class="flex flex-column">
-      <div
-        class="grid gap-4 w-full m-0 justify-content-center md:justify-content-center"
-        *ngIf="courses()?.length; else noData"
-      >
-        <section
-          class="shadow-1 bg-white border-round-xl card-style w-22rem md:w-20rem
-          transition-linear transition-duration-300 hover:shadow-3"
-          *ngFor="let course of courses()"
-        >
-          <div
-            [pTooltip]="tooltipContent"
-            tooltipZIndex="z-1"
-            [autoHide]="false"
-            [fitContent]="false"
-            [showDelay]="1000"
-            class="min-h-4rem border-round-xl"
-          >
-            <!-- *ngIf="
-              !isPartner && !(course.categoria.titulo === 'DIREITO ONLINE')
-            " -->
-            <ng-template #tooltipContent>
-              <div class="flex flex-column bg-white">
-                <p class="mt-2 mb-0 text-red-600 text-lg font-bold">
-                  {{ course.titulo | uppercase }}
-                </p>
-                <small>em {{ course.categoria?.titulo }}</small>
-                <p-divider class="w-full" />
-                <div class="flex flex-row w-full justify-content-between">
-                  <small class="flex align-items-center gap-1">
-                    <i class="text-red-600 pi pi-clock"></i>
-                    {{ course.cargaHoraria }} Horas
-                  </small>
-                  <small
-                    *ngIf="quantityOfVideos(course.materiais)"
-                    class="flex align-items-center gap-1"
-                  >
-                    <i class="text-red-600 pi pi-video"></i>
-                    {{ quantityOfVideos(course.materiais) }}
-                    {{
-                      quantityOfVideos(course.materiais) > 1
-                        ? 'Videos'
-                        : 'Video'
-                    }}
-                  </small>
-                  <small
-                    *ngIf="quantityOfPdf(course.materiais)"
-                    class="flex align-items-center gap-1"
-                  >
-                    <i class="text-red-600 pi pi-book"></i>
-                    {{ quantityOfPdf(course.materiais) }}
-                    {{
-                      quantityOfPdf(course.materiais) > 1
-                        ? 'Materiais'
-                        : 'Material'
-                    }}
-                  </small>
-                </div>
-
-                <p-divider type="solid" class="w-full mt-1" />
-                <small>{{ course.descricao | uppercase }}</small>
-              </div>
-            </ng-template>
-            <div class="flex flex-column w-full relative">
-              <p-tag
-                *ngIf="course.promocao"
-                class="absolute z-1 m-3 sm:m-2 left-0"
-                icon="pi pi-exclamation-triangle"
-                severity="warning"
-                value="Promoção"
-              />
-              <p-tag
-                class="absolute z-1 m-3 sm:m-2 right-0"
-                icon="pi pi-clock"
-                value="{{ course?.cargaHoraria }} Horas"
-              />
-              <header
-                class="w-full h-14rem"
-                [style]="{ display: 'block', overflow: 'hidden' }"
+    <div class="w-full bg-red-600">
+      <div class="w-90rem flex gap-3 align-items-center m-auto">
+        <h1 class="p-4 text-2xl text-white font-bold m-0">Todos os cursos</h1>
+      </div>
+    </div>
+    <div class="w-90rem m-auto relative">
+      <div class="layout-wrapper" [ngClass]="containerClass">
+        <div class="layout-sidebar flex justify-content-center">
+          <p-progressSpinner
+            styleClass="w-3rem h-3rem"
+            *ngIf="!hasCoursesItems()"
+            strokeWidth="8"
+            fill="var(--surface-ground)"
+            animationDuration=".8s"
+          />
+          <app-sidebar *ngIf="hasCoursesItems()" />
+        </div>
+        <div class="layout-main-container border-round-xl">
+          <div class="layout-main border-round-xl">
+            <div class="absolute bottom-0 top-0 lg:hidden">
+              <button
+                #menubutton
+                pRipple
+                class="p-link layout-menu-button bg-red-600 layout-topbar-button
+                shadow-2 text-center text-white font-bold toogle-button"
+                (click)="layoutService.onMenuToggle()"
               >
-                <img
-                  *ngIf="course.capa; else noImage"
-                  class="w-full h-full cursor-pointer border-round-xl border-noround-bottom image-hover image-content"
-                  [src]="course.capa | directory_image"
-                  [alt]="course.titulo"
-                  (click)="navigateTo(course.titulo, course.id.toString())"
-                />
-              </header>
-
-              <p-divider type="solid" class="w-full" styleClass="my-3" />
-
-              <div class="px-5 pb-3">
-                <main class="flex mb-4 flex-column">
-                  <div class="min-h-27rem">
-                    <a
-                      (click)="navigateTo(course.titulo, course.id.toString())"
-                      class="m-0 text-lg cursor-pointer font-bold text-800 line-height-3
-                    text-ellipsis-2 transition-all transition-duration-500 hover:text-red-600
-                    hover:underline hover:font-bold"
-                    >
-                      {{ course.titulo }}
-                    </a>
-                    <span class="text-sm text-600 mb-2">
-                      {{ categoryType(course.tipoCurso) | uppercase }}
-                    </span>
-                    <span class="text-sm mt-2 text-600 mb-2 text-ellipsis-3">
-                      {{ course.descricao }}
-                    </span>
+                <i class="pi pi-chevron-right"></i>
+              </button>
+            </div>
+            
+            <!-- Área dos cards de curso - EXEMPLO -->
+            <div class="course-cards-container p-4">
+              <div class="grid">
+                <!-- Exemplo de card de curso -->
+                <div class="col-12 md:col-6 lg:col-4" *ngFor="let course of courses$ | async">
+                  <div class="course-card border-1 surface-border border-round surface-card p-3">
+                    <div class="course-image mb-3">
+                      <img [src]="course.image" [alt]="course.title" class="w-full border-round" />
+                    </div>
+                    <h3 class="text-xl font-bold mb-2">{{ course.title }}</h3>
+                    <p class="text-gray-600 mb-3">{{ course.description }}</p>
+                    <div class="flex justify-content-between align-items-center">
+                      <span class="text-2xl font-bold text-primary">{{ course.price }}</span>
+                      <div class="flex gap-2">
+                        <!-- Botão Adicionar ao Carrinho -->
+                        <button
+                          pButton
+                          pRipple
+                          icon="pi pi-shopping-cart"
+                          class="p-button-success p-button-sm"
+                          (click)="addToCart(course)"
+                          label="Adicionar"
+                        ></button>
+                        
+                        <!-- Botão Compartilhar no Facebook -->
+                        <button
+                          pButton
+                          pRipple
+                          icon="pi pi-facebook"
+                          class="p-button-primary p-button-sm"
+                          (click)="shareOnFacebook(course)"
+                          label="Compartilhar"
+                        ></button>
+                      </div>
+                    </div>
                   </div>
-
-                  <p-divider class="w-full" styleClass="my-3" />
-
-                  <div
-                    class="flex flex-column"
-                    *ngIf="course.categoria?.titulo !== 'GRADUAÇÃO' &&
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO'"
-                  >
-                                   <span
-                  [ngClass]="hasParcels(course.qtdParcelas) ? 'text-base' : 'text-2xl'"
-                  class="text-red-600 font-bold text-right mb-2"
-                >
-                  {{ course.preco === 0 ? 'Gratuito' : (course.preco | currency) }}
-                </span>
-                    <span *ngIf="hasParcels(course.qtdParcelas)" class="text-right">
-                      Até
-                      <strong>
-                        {{ course.qtdParcelas }} x {{
-                          parcelsValue(course.qtdParcelas, course.preco) | currency
-                        }}
-                      </strong>
-                    </span>
-                    <span *ngIf="course.preco === 0" class="text-right">Nenhuma parcela</span>
-                  </div>
-                </main>
-                <footer class="w-full flex justify-content-center">
-                  <p-button
-                    [label]="
-                    course.categoria?.titulo !== 'GRADUAÇÃO' && 
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO'
-                        ? 'Adicionar ao carrinho'
-                        : 'Falar com vendedor'
-                    "
-                    styleClass="p-2"
-                    [icon]="
-                    course.categoria?.titulo !== 'GRADUAÇÃO'&&
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO'
-                        ? 'pi pi-cart-plus'
-                        : 'pi pi-send'
-                    "
-                    [disabled]="disabledButton(course.id)"
-                    (onClick)="
-                    course.categoria?.titulo !== 'GRADUAÇÃO' &&
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO'
-                        ? addToCart(course)
-                        : goToSalesRep()
-                    "
-                  />
-                </footer>
+                </div>
               </div>
             </div>
+
+            <router-outlet></router-outlet>
           </div>
-        </section>
+        </div>
+        <div class="layout-mask"></div>
       </div>
-      <app-paginator
-        class="w-full mt-6"
-        [totalRecords]="totalCourses"
-        (pageChange)="onPageChange($event)"
-      />
     </div>
-
-    <ng-template #noData>
-      <app-no-data />
-    </ng-template>
-
-    <ng-template #noImage>
-      <app-no-image />
-    </ng-template>
   `,
   styles: [
     `
-      .image-content {
+      .toogle-button {
         display: block;
-        height: 100%;
-        object-fit: cover;
-        object-position: top;
+        position: fixed;
+        width: 3rem;
+        height: 3rem;
+        top: 50%;
+        left: 0;
+        border-radius: 0px 16px 16px 0 !important;
       }
 
-      .card-style {
-        &:hover {
-          .image-hover {
-            transform: scale3d(1.1, 1.1, 1);
-            transition: transform 1s ease-in-out;
-          }
-        }
+      .course-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .course-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
       }
     `
   ]
 })
-export class CoursesPageComponent implements OnInit {
-  getItemsFromCartById = signal<number[]>([]);
-  layout: string = 'list';
+export class LayoutComponent implements OnDestroy {
+  overlayMenuOpenSubscription: Subscription;
+  menuOutsideClickListener: any;
+  profileMenuOutsideClickListener: any;
 
-  private activatedRoute = inject(ActivatedRoute);
-  private router = inject(Router);
-  private store = inject(Store);
+  @ViewChild(SidebarComponent) appSidebar!: SidebarComponent;
 
-  routeName: string;
-  categoryRouteId: string | number;
-  paramsType: string | null;
-  idType: string | null;
-  items: MenuItem[];
+  // Exemplo de observable para os cursos
+  courses$ = this.store.select(courseSelectorCollection);
 
-  courses = signal<CourseType[]>([]);
-  totalCourses: number;
-
-  indexPage: number = 0;
-
-  ngOnInit(): void {
-    this.routeName = this.router.url.toString();
-    this.store.dispatch(CoursesActions.enter());
-    this.checkActivedRoute();
-    this.getCoursesItems();
-    this.checkItemsStore();
-
-    this.store.dispatch(LoadingAction.loading({ message: true }));
-  }
-
-  getCoursesItems(): void {
-    combineLatest([
-      this.store.select(coursesPaginatorAllItemsSelector),
-      this.store.select(courseSelectorCollectionLength),
-      this.store.select(coursesPaginatorWithFilterSelector),
-      this.store.select(courseSelectorPaginatorCollectionLength),
-      this.store.select(coursesPaginatorSearchItemsSelector)
-    ])
-      .pipe(
-        switchMap(
-          ([
-            result,
-            collectionLength,
-            CollectionPaginator,
-            paginatorLength,
-            collectionBySearch
-          ]) => {
-            const hasFilter =
-              paginatorLength > 0 ||
-              (collectionBySearch && collectionBySearch.length > 0);
-            if (hasFilter) {
-              if (collectionBySearch && collectionBySearch.length) {
-                return of({
-                  courses: collectionBySearch,
-                  totalCourses: paginatorLength
-                });
-              }
-              return of({
-                courses: CollectionPaginator,
-                totalCourses: paginatorLength
-              });
-            } else if (this.paramsType && !hasFilter) {
-              return of({
-                courses: [],
-                totalCourses: 0
-              });
-            } else {
-              return of({
-                courses: result,
-                totalCourses: collectionLength
-              });
+  constructor(
+    public layoutService: LayoutService,
+    public renderer: Renderer2,
+    public router: Router,
+    private store: Store
+  ) {
+    this.overlayMenuOpenSubscription = this.layoutService.overlayOpen$.subscribe(() => {
+      if (!this.menuOutsideClickListener) {
+        this.menuOutsideClickListener = this.renderer.listen(
+          'document',
+          'click',
+          event => {
+            const isOutsideClicked = !(
+              this.appSidebar.el.nativeElement.isSameNode(event.target) ||
+              this.appSidebar.el.nativeElement.contains(event.target)
+            );
+            if (isOutsideClicked) {
+              this.hideMenu();
             }
           }
+        );
+      }
+
+      if (this.layoutService.state.staticMenuMobileActive) {
+        this.blockBodyScroll();
+      }
+    });
+
+    this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.hideMenu();
+        this.hideProfileMenu();
+      });
+  }
+
+  hasCoursesItems(): boolean {
+    let hasCourses = false;
+    this.store.select(courseSelectorCollection).subscribe({
+      next: courses => {
+        hasCourses = courses.length ? true : false;
+      }
+    });
+    return hasCourses;
+  }
+
+  // Método para compartilhar no Facebook
+  shareOnFacebook(course: any): void {
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent(`Confira este curso: ${course.title} - ${course.description}`);
+    
+    // URL de compartilhamento do Facebook
+    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
+    
+    // Abre a janela de compartilhamento
+    window.open(
+      facebookShareUrl,
+      'facebook-share-dialog',
+      'width=800,height=600'
+    );
+  }
+
+  // Método para adicionar ao carrinho
+  addToCart(course: any): void {
+    // Implemente a lógica para adicionar ao carrinho aqui
+    console.log('Curso adicionado ao carrinho:', course);
+    // this.store.dispatch(addToCartAction({ course }));
+  }
+
+  hideMenu(): void {
+    this.layoutService.state.overlayMenuActive = false;
+    this.layoutService.state.staticMenuMobileActive = false;
+    this.layoutService.state.menuHoverActive = false;
+    if (this.menuOutsideClickListener) {
+      this.menuOutsideClickListener();
+      this.menuOutsideClickListener = null;
+    }
+    this.unblockBodyScroll();
+  }
+
+  hideProfileMenu(): void {
+    this.layoutService.state.profileSidebarVisible = false;
+    if (this.profileMenuOutsideClickListener) {
+      this.profileMenuOutsideClickListener();
+      this.profileMenuOutsideClickListener = null;
+    }
+  }
+
+  blockBodyScroll(): void {
+    if (document.body.classList) {
+      document.body.classList.add('blocked-scroll');
+    } else {
+      document.body.className += ' blocked-scroll';
+    }
+  }
+
+  unblockBodyScroll(): void {
+    if (document.body.classList) {
+      document.body.classList.remove('blocked-scroll');
+    } else {
+      document.body.className = document.body.className.replace(
+        new RegExp(
+          `(^|\\b)${'blocked-scroll'.split(' ').join('|')}(\\b|$)`,
+          'gi'
         ),
-        tap(({ courses, totalCourses }) => {
-          this.courses.update(() => courses);
-          this.totalCourses = totalCourses;
-        })
-      )
-      .subscribe();
+        ' '
+      );
+    }
   }
 
-  disabledButton(id: number): boolean {
-    return this.getItemsFromCartById().some(item => item === id);
+  get containerClass(): any {
+    return {
+      'layout-theme-light': this.layoutService.config.colorScheme === 'light',
+      'layout-theme-dark': this.layoutService.config.colorScheme === 'dark',
+      'layout-overlay': this.layoutService.config.menuMode === 'overlay',
+      'layout-static': this.layoutService.config.menuMode === 'static',
+      'layout-static-inactive':
+        this.layoutService.state.staticMenuDesktopInactive &&
+        this.layoutService.config.menuMode === 'static',
+      'layout-overlay-active': this.layoutService.state.overlayMenuActive,
+      'layout-mobile-active': this.layoutService.state.staticMenuMobileActive,
+      'p-input-filled': this.layoutService.config.inputStyle === 'filled',
+      'p-ripple-disabled': !this.layoutService.config.ripple
+    };
   }
 
-  parcelsValue(parcels: string, value: number): number {
-    return value / Number(parcels);
-  }
+  ngOnDestroy(): void {
+    if (this.overlayMenuOpenSubscription) {
+      this.overlayMenuOpenSubscription.unsubscribe();
+    }
 
-  hasParcels(parcels: string): boolean {
-    return Number(parcels) > 0;
-  }
-
-  onPageChange(event: PaginatorModel): void {
-    this.indexPage = event.page;
-
-    this.store.dispatch(CoursesActions.selectPageByPaginator({ page: event }));
-  }
-
-  checkItemsStore(): void {
-    this.store.select(cartItemsSelector).subscribe({
-      next: result => {
-        const buttonDisabled = result.map(item => item.id);
-        this.getItemsFromCartById.set(buttonDisabled);
-      }
-    });
-  }
-
-  checkActivedRoute = (): void => {
-    this.activatedRoute.queryParamMap.subscribe(params => {
-      this.store.dispatch(CoursesActions.enter());
-
-      this.paramsType = params.get('type');
-      this.idType = params.get('id');
-
-      this.store.dispatch(LoadingAction.loading({ message: true }));
-
-      if (this.paramsType === 'categoria' && this.idType) {
-        this.store.dispatch(
-          CoursesActions.selectCourseByCategory({ id: this.idType })
-        );
-      } else if (this.paramsType === 'subcategoria' && this.idType) {
-        this.store.dispatch(
-          CoursesActions.selectCourseBySubCategory({ id: this.idType })
-        );
-      }
-    });
-  };
-
-  quantityOfPdf(materials: MaterialType[]): number {
-    let pdfQuantity = 0;
-    for (const material of materials)
-      if (this.pdfOrVideo(material.tipoMaterial) === 'PDF') pdfQuantity += 1;
-    return pdfQuantity;
-  }
-
-  quantityOfVideos(materials: MaterialType[]): number {
-    let videoQuantity = 0;
-    for (const material of materials)
-      if (this.pdfOrVideo(material.tipoMaterial) === 'Video')
-        videoQuantity += 1;
-    return videoQuantity;
-  }
-
-  categoryType(type: number): string {
-    return CourseTypeEnum[type];
-  }
-
-  addToCart(item: CourseType): void {
-    const cart = new CartType(item);
-    this.store.dispatch(CartActions.addItemToCart({ item: cart }));
-  }
-
-  navigateTo(title: string, code: string): void {
-    this.router.navigate(['cursos', title, code]);
-  }
-
-  goToSalesRep(): void {
-    window.open(Constants.SalesRepLink);
-  }
-
-  private pdfOrVideo(type: number): string {
-    return MaterialTypeEnum[type];
-  }
-
-  get isPartner(): boolean {
-    let hasPartner = false;
-    this.store.select(userDetailsSelect).subscribe({
-      next: user =>
-        user.map(details => {
-          hasPartner = details.parceiro ? true : false;
-        })
-    });
-
-    return hasPartner;
+    if (this.menuOutsideClickListener) {
+      this.menuOutsideClickListener();
+    }
   }
 }
