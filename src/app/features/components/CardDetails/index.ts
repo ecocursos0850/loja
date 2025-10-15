@@ -30,6 +30,7 @@ import { ButtonModule } from 'primeng/button';
 import { DividerModule } from 'primeng/divider';
 import { Store } from '@ngrx/store';
 import { TagModule } from 'primeng/tag';
+import { TooltipModule } from 'primeng/tooltip';
 
 import { SanitizeHtmlPipe } from '../../../shared/pipes/sanitize-html.pipe';
 import { DialogModule } from 'primeng/dialog';
@@ -60,11 +61,11 @@ import { DialogModule } from 'primeng/dialog';
             <ng-container *ngIf="course.categoria.titulo.toUpperCase() == 'PÓS-GRADUAÇÃO / MBA'; else elsePos">
               <div class="flex w-full flex-column row-gap-3">
                 <div class="flex m-xl-2">
-                <p-button 
-                  label="Ver matriz curricular" 
-                  icon="pi pi-file"
-                  (click)="this.visibleDialog = !this.visibleDialog"
-                  class="w-full"
+                  <p-button 
+                    label="Ver matriz curricular" 
+                    icon="pi pi-file"
+                    (click)="this.visibleDialog = !this.visibleDialog"
+                    class="w-full"
                   />
                 </div>
                 <div class="flex gap-1">
@@ -78,6 +79,17 @@ import { DialogModule } from 'primeng/dialog';
                 <div class="flex gap-1">
                   <i class='text-red-600 pi pi-dollar'></i>
                   <b>Sem taxa de matrícula</b>
+                </div>
+                
+                <!-- Botão Compartilhar na página de detalhes -->
+                <div class="flex m-xl-2">
+                  <p-button 
+                    label="Compartilhar no Facebook" 
+                    icon="pi pi-facebook"
+                    styleClass="p-button-primary w-full"
+                    [pTooltip]="'Compartilhar este curso no Facebook'"
+                    (click)="shareOnFacebook(course)"
+                  />
                 </div>
               </div>
             </ng-container>
@@ -134,6 +146,17 @@ import { DialogModule } from 'primeng/dialog';
                   }}</label>
                   <span class="line-height-4 flex align-items-center gap-1">
                   </span>
+                </div>
+                
+                <!-- Botão Compartilhar na página de detalhes -->
+                <div class="flex col-12 mt-3">
+                  <p-button 
+                    label="Compartilhar no Facebook" 
+                    icon="pi pi-facebook"
+                    styleClass="p-button-primary w-full"
+                    [pTooltip]="'Compartilhar este curso no Facebook'"
+                    (click)="shareOnFacebook(course)"
+                  />
                 </div>
               </div>
             </ng-template>
@@ -252,14 +275,13 @@ import { DialogModule } from 'primeng/dialog';
     </ng-template>
 
     <p-dialog header="Matriz curricular" [modal]="true" [(visible)]="this.visibleDialog">
-    <div class="w-full px-2">
-          <div
-            *ngIf="course.conteudo"
-            [innerHTML]="course.conteudo | sanitizeHtml"
-          ></div>
-        </div>
+      <div class="w-full px-2">
+        <div
+          *ngIf="course.conteudo"
+          [innerHTML]="course.conteudo | sanitizeHtml"
+        ></div>
+      </div>
     </p-dialog>
-
   `,
   imports: [
     UpperCasePipe,
@@ -273,7 +295,8 @@ import { DialogModule } from 'primeng/dialog';
     NoImageComponent,
     GetDirectoryImage,
     SanitizeHtmlPipe,
-    DialogModule
+    DialogModule,
+    TooltipModule
   ]
 })
 export class CardDetailsPageComponent implements OnInit {
@@ -344,6 +367,30 @@ export class CardDetailsPageComponent implements OnInit {
 
   goToSalesRep(): void {
     window.open(Constants.SalesRepLink);
+  }
+
+  // NOVO MÉTODO: Compartilhar no Facebook
+  shareOnFacebook(course: CourseType): void {
+    const currentUrl = window.location.href;
+    
+    // Formata o preço manualmente
+    const formattedPrice = course.preco === 0 
+      ? 'GRATUITO' 
+      : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(course.preco);
+    
+    const shareText = `🎓 Confira este curso: ${course.titulo}\n\n${course.descricao}\n\n💡 Carga Horária: ${course.cargaHoraria} horas\n💰 ${formattedPrice}`;
+    
+    const encodedUrl = encodeURIComponent(currentUrl);
+    const encodedText = encodeURIComponent(shareText);
+    
+    // URL de compartilhamento do Facebook
+    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+    
+    window.open(
+      facebookShareUrl,
+      'facebook-share-dialog',
+      'width=800,height=600,top=100,left=100'
+    );
   }
 
   private pdfOrVideo(type: number): string {

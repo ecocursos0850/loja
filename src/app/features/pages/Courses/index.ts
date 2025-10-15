@@ -453,11 +453,18 @@ export class CoursesPageComponent implements OnInit {
       .replace(/ +/g, '-');
     
     const currentUrl = `${window.location.origin}/cursos/${courseSlug}/${course.id}`;
-    const shareText = `🎓 Confira este curso: ${course.titulo}\n\n${course.descricao}\n\n💡 Carga Horária: ${course.cargaHoraria} horas\n💰 ${course.preco === 0 ? 'GRATUITO' : 'Preço: ' + (course.preco | currency)}`;
+    
+    // Formata o preço manualmente sem usar o pipe currency
+    const formattedPrice = course.preco === 0 
+      ? 'GRATUITO' 
+      : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(course.preco);
+    
+    const shareText = `🎓 Confira este curso: ${course.titulo}\n\n${course.descricao}\n\n💡 Carga Horária: ${course.cargaHoraria} horas\n💰 ${formattedPrice}`;
     
     const encodedUrl = encodeURIComponent(currentUrl);
     const encodedText = encodeURIComponent(shareText);
     
+    // URL de compartilhamento do Facebook
     const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
     
     window.open(
