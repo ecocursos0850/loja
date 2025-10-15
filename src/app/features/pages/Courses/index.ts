@@ -454,14 +454,9 @@ export class CoursesPageComponent implements OnInit {
       .replace(/ +/g, '-');
     
     const courseUrl = `${window.location.origin}/cursos/${courseSlug}/${course.id}`;
-    const courseImage = `https://srv448021.hstgr.cloud/Cursos/${course.capa}`;
     
-    // Texto detalhado para o compartilhamento
-    const formattedPrice = course.preco === 0 
-      ? 'GRATUITO' 
-      : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(course.preco);
-    
-    const shareText = `🎓 ${course.titulo}\n\n${course.descricao}\n\n💡 Carga Horária: ${course.cargaHoraria} horas\n💰 ${formattedPrice}\n\n🔗 ${courseUrl}`;
+    // MENSAGEM PADRÃO com nome do curso dinâmico
+    const shareText = `Aprofunde seus conhecimentos! 📚\n\nConfira o curso "${course.titulo}" da Ecocursos e amplie suas oportunidades profissionais.\n\n✅ Curso livre de atualização e capacitação profissional conforme Decreto 5.154/2004.\n\n🌐 Acesse: ${courseUrl}`;
     
     const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(courseUrl)}&quote=${encodeURIComponent(shareText)}`;
     

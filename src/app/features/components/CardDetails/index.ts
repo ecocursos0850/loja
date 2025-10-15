@@ -379,11 +379,8 @@ export class CardDetailsPageComponent implements OnInit {
   shareOnFacebook(): void {
     const currentUrl = window.location.href;
     
-    const formattedPrice = this.course.preco === 0 
-      ? 'GRATUITO' 
-      : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(this.course.preco);
-    
-    const shareText = `🎓 ${this.course.titulo}\n\n${this.course.descricao}\n\n💡 Carga Horária: ${this.course.cargaHoraria} horas\n💰 ${formattedPrice}\n\n🔗 ${currentUrl}`;
+    // MENSAGEM PADRÃO com nome do curso dinâmico
+    const shareText = `Aprofunde seus conhecimentos! 📚\n\nConfira o curso "${this.course.titulo}" da Ecocursos e amplie suas oportunidades profissionais.\n\n✅ Curso livre de atualização e capacitação profissional conforme Decreto 5.154/2004.\n\n🌐 Acesse: ${currentUrl}`;
     
     const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}&quote=${encodeURIComponent(shareText)}`;
     
