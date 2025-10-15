@@ -200,7 +200,7 @@ import { DialogModule } from 'primeng/dialog';
                 [label]=" 
                 course.categoria?.titulo !== 'GRADUAÇÃO' &&
                 course.categoria?.titulo !== '2ª GRADUAÇÃO'
-                    ? 'Adicionar ao carrinho'
+                    ? 'Comprar'
                     : 'Falar com vendedor'
                 "
                 [icon]="

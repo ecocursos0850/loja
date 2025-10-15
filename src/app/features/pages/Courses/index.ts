@@ -209,12 +209,12 @@ import { NoDataComponent } from '../../../shared/components/NoData/index';
                   </div>
                 </main>
                 <footer class="w-full flex gap-2 justify-content-center">
-                  <!-- Botão Adicionar ao Carrinho -->
+                  <!-- Botão Comprar -->
                   <p-button
                     [label]="
                     course.categoria?.titulo !== 'GRADUAÇÃO' && 
                     course.categoria?.titulo !== '2ª GRADUAÇÃO'
-                        ? 'Adicionar ao carrinho'
+                        ? 'Comprar'
                         : 'Falar com vendedor'
                     "
                     styleClass="p-2 flex-1"
@@ -446,8 +446,14 @@ export class CoursesPageComponent implements OnInit {
 
   // MÉTODO CORRIGIDO: Compartilhar no Facebook
   shareOnFacebook(course: CourseType): void {
-    const currentUrl = window.location.origin + '/cursos/' + course.titulo + '/' + course.id;
-    const shareText = `Confira este curso: ${course.titulo} - ${course.descricao}`;
+    // Cria uma URL mais amigável
+    const courseSlug = course.titulo
+      .toLowerCase()
+      .replace(/[^\w ]+/g, '')
+      .replace(/ +/g, '-');
+    
+    const currentUrl = `${window.location.origin}/cursos/${courseSlug}/${course.id}`;
+    const shareText = `🎓 Confira este curso: ${course.titulo}\n\n${course.descricao}\n\n💡 Carga Horária: ${course.cargaHoraria} horas\n💰 ${course.preco === 0 ? 'GRATUITO' : 'Preço: ' + (course.preco | currency)}`;
     
     const encodedUrl = encodeURIComponent(currentUrl);
     const encodedText = encodeURIComponent(shareText);
