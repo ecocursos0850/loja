@@ -319,7 +319,7 @@ export class CardDetailsPageComponent implements OnInit {
 
   ngOnInit(): void {
     this.store.dispatch(LoadingAction.loading({ message: true }));
-
+  
     const id = this.route.snapshot.paramMap.get('code');
     if (id) this.store.dispatch(CoursesActions.selectCourseById({ id: id }));
     this.store.select(coursesItemSelector).subscribe({
@@ -330,12 +330,12 @@ export class CardDetailsPageComponent implements OnInit {
           this.videoQuantity = 0;
           this.quantityOfVideos();
           
-          // Configura as meta tags para o Facebook
-          this.metaService.setCourseMetaTags(course);
+          // Configura as meta tags para o Facebook COM PRIORIDADE PARA VÍDEO
+          this.metaService.setCourseMetaTagsWithVideoPriority(course);
         }
       }
     });
-
+  
     this.checkItemsStore();
   }
 
