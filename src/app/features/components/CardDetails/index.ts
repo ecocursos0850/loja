@@ -35,6 +35,9 @@ import { TooltipModule } from 'primeng/tooltip';
 import { SanitizeHtmlPipe } from '../../../shared/pipes/sanitize-html.pipe';
 import { DialogModule } from 'primeng/dialog';
 
+// Importe o MetaService (você precisa criá-lo)
+import { MetaService } from '@shared/services/meta.service';
+
 @Component({
   selector: 'app-page-card-details',
   standalone: true,
@@ -88,7 +91,7 @@ import { DialogModule } from 'primeng/dialog';
                     icon="pi pi-facebook"
                     styleClass="p-button-primary w-full"
                     [pTooltip]="'Compartilhar este curso no Facebook'"
-                    (click)="shareOnFacebook(course)"
+                    (click)="shareOnFacebook()"
                   />
                 </div>
               </div>
@@ -155,7 +158,7 @@ import { DialogModule } from 'primeng/dialog';
                     icon="pi pi-facebook"
                     styleClass="p-button-primary w-full"
                     [pTooltip]="'Compartilhar este curso no Facebook'"
-                    (click)="shareOnFacebook(course)"
+                    (click)="shareOnFacebook()"
                   />
                 </div>
               </div>
@@ -305,6 +308,7 @@ export class CardDetailsPageComponent implements OnInit {
 
   private route = inject(ActivatedRoute);
   private store = inject(Store);
+  private metaService = inject(MetaService); // Descomente quando criar o MetaService
 
   getItemsFromCartById = signal<number[]>([]);
 
@@ -327,6 +331,9 @@ export class CardDetailsPageComponent implements OnInit {
           this.pdfQuantity = 0;
           this.videoQuantity = 0;
           this.quantityOfVideos();
+          
+          // Configura as meta tags para o Facebook
+          this.metaService.setCourseMetaTags(course); // Descomente quando criar o MetaService
         }
       }
     });
@@ -369,22 +376,10 @@ export class CardDetailsPageComponent implements OnInit {
     window.open(Constants.SalesRepLink);
   }
 
-  // NOVO MÉTODO: Compartilhar no Facebook
-  shareOnFacebook(course: CourseType): void {
+  // MÉTODO SIMPLIFICADO: Compartilhar no Facebook
+  shareOnFacebook(): void {
     const currentUrl = window.location.href;
-    
-    // Formata o preço manualmente
-    const formattedPrice = course.preco === 0 
-      ? 'GRATUITO' 
-      : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(course.preco);
-    
-    const shareText = `🎓 Confira este curso: ${course.titulo}\n\n${course.descricao}\n\n💡 Carga Horária: ${course.cargaHoraria} horas\n💰 ${formattedPrice}`;
-    
-    const encodedUrl = encodeURIComponent(currentUrl);
-    const encodedText = encodeURIComponent(shareText);
-    
-    // URL de compartilhamento do Facebook
-    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`;
     
     window.open(
       facebookShareUrl,

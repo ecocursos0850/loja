@@ -444,28 +444,18 @@ export class CoursesPageComponent implements OnInit {
     window.open(Constants.SalesRepLink);
   }
 
-  // MÉTODO CORRIGIDO: Compartilhar no Facebook
+  // MÉTODO ATUALIZADO: Compartilhar no Facebook
   shareOnFacebook(course: CourseType): void {
-    // Cria uma URL mais amigável
+    // Cria uma URL mais amigável para a página de detalhes
     const courseSlug = course.titulo
       .toLowerCase()
       .replace(/[^\w ]+/g, '')
       .replace(/ +/g, '-');
     
-    const currentUrl = `${window.location.origin}/cursos/${courseSlug}/${course.id}`;
-    
-    // Formata o preço manualmente sem usar o pipe currency
-    const formattedPrice = course.preco === 0 
-      ? 'GRATUITO' 
-      : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(course.preco);
-    
-    const shareText = `🎓 Confira este curso: ${course.titulo}\n\n${course.descricao}\n\n💡 Carga Horária: ${course.cargaHoraria} horas\n💰 ${formattedPrice}`;
-    
-    const encodedUrl = encodeURIComponent(currentUrl);
-    const encodedText = encodeURIComponent(shareText);
+    const courseUrl = `${window.location.origin}/cursos/${courseSlug}/${course.id}`;
     
     // URL de compartilhamento do Facebook
-    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`;
+    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(courseUrl)}`;
     
     window.open(
       facebookShareUrl,
