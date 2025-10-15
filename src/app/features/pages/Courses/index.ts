@@ -27,6 +27,7 @@ import { MaterialTypeEnum } from '@shared/models/enum/material-type.enum';
 import { userDetailsSelect } from '@shared/store/reducers/user-details.reducer';
 import { PaginatorModel } from '@shared/models/classes/paginator.model';
 import { Constants } from '@shared/utils/constants';
+import { MetaService } from '@shared/services/meta.service'; // ADICIONAR ESTA LINHA
 
 import { combineLatest, of, switchMap, tap } from 'rxjs';
 
@@ -290,6 +291,7 @@ export class CoursesPageComponent implements OnInit {
   private activatedRoute = inject(ActivatedRoute);
   private router = inject(Router);
   private store = inject(Store);
+  private metaService = inject(MetaService); // INJETAR O META SERVICE
 
   routeName: string;
   categoryRouteId: string | number;

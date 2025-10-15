@@ -25,6 +25,7 @@ import { cartItemsSelector } from '@shared/store/reducers/cart.reducer';
 import { GetDirectoryImage } from '@shared/pipes/convert-base64.pipe';
 import { MaterialTypeEnum } from '@shared/models/enum/material-type.enum';
 import { Constants } from '@shared/utils/constants';
+import { MetaService } from '@shared/services/meta.service'; // ADICIONAR ESTA LINHA
 
 import { ButtonModule } from 'primeng/button';
 import { DividerModule } from 'primeng/divider';
@@ -34,9 +35,6 @@ import { TooltipModule } from 'primeng/tooltip';
 
 import { SanitizeHtmlPipe } from '../../../shared/pipes/sanitize-html.pipe';
 import { DialogModule } from 'primeng/dialog';
-
-// Importe o MetaService (você precisa criá-lo)
-import { MetaService } from '@shared/services/meta.service';
 
 @Component({
   selector: 'app-page-card-details',
@@ -308,7 +306,7 @@ export class CardDetailsPageComponent implements OnInit {
 
   private route = inject(ActivatedRoute);
   private store = inject(Store);
-  private metaService = inject(MetaService); // Descomente quando criar o MetaService
+  private metaService = inject(MetaService); // INJETAR O META SERVICE
 
   getItemsFromCartById = signal<number[]>([]);
 
@@ -333,7 +331,7 @@ export class CardDetailsPageComponent implements OnInit {
           this.quantityOfVideos();
           
           // Configura as meta tags para o Facebook
-          this.metaService.setCourseMetaTags(course); // Descomente quando criar o MetaService
+          this.metaService.setCourseMetaTags(course);
         }
       }
     });
