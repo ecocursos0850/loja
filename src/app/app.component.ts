@@ -3,6 +3,7 @@ import { Component, inject, OnInit, ViewChild } from '@angular/core';
 import { RouterModule, RouterOutlet } from '@angular/router';
 import { LoadingComponent } from '@shared/components/Loading';
 import { ModalComponent } from '@shared/components/Modal';
+import { MetaService } from '@shared/services/meta.service'; // ADICIONE ESTA IMPORT
 
 import { PrimeNGConfig } from 'primeng/api';
 import { MessagesModule } from 'primeng/messages';
@@ -12,6 +13,7 @@ import { HeaderComponent } from './core/components/Header';
 import { FooterComponent } from './core/components/Footer';
 import { MessageComponent } from './shared/components/Message';
 import { NavbarComponent } from './core/components/Navbar';
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -83,9 +85,13 @@ export class AppComponent implements OnInit {
   @ViewChild('ModalComponent') modalComponent?: ModalComponent;
 
   private primengConfig = inject(PrimeNGConfig);
+  private metaService = inject(MetaService); // INJETE O META SERVICE
   isHeaderHidden = false;
 
   ngOnInit(): void {
     this.primengConfig.ripple = true;
+    
+    // Define meta tags padrão quando o app inicia
+    this.metaService.setCoursesListMetaTags();
   }
 }
