@@ -448,18 +448,22 @@ export class CoursesPageComponent implements OnInit {
 
   // MÉTODO ATUALIZADO: Compartilhar no Facebook
   shareOnFacebook(course: CourseType): void {
-    // PRIMEIRO: Define as meta tags específicas do curso
-    this.metaService.setCourseMetaTags(course);
-    
-    // DEPOIS: Compartilha a URL do curso
     const courseSlug = course.titulo
       .toLowerCase()
       .replace(/[^\w ]+/g, '')
       .replace(/ +/g, '-');
     
     const courseUrl = `${window.location.origin}/cursos/${courseSlug}/${course.id}`;
+    const courseImage = `https://srv448021.hstgr.cloud/Cursos/${course.capa}`;
     
-    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(courseUrl)}`;
+    // Texto detalhado para o compartilhamento
+    const formattedPrice = course.preco === 0 
+      ? 'GRATUITO' 
+      : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(course.preco);
+    
+    const shareText = `🎓 ${course.titulo}\n\n${course.descricao}\n\n💡 Carga Horária: ${course.cargaHoraria} horas\n💰 ${formattedPrice}\n\n🔗 ${courseUrl}`;
+    
+    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(courseUrl)}&quote=${encodeURIComponent(shareText)}`;
     
     window.open(
       facebookShareUrl,

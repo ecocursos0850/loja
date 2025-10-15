@@ -375,10 +375,17 @@ export class CardDetailsPageComponent implements OnInit {
     window.open(Constants.SalesRepLink);
   }
 
-  // MÉTODO SIMPLIFICADO: Compartilhar no Facebook
+  // MÉTODO ATUALIZADO: Compartilhar no Facebook
   shareOnFacebook(): void {
     const currentUrl = window.location.href;
-    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`;
+    
+    const formattedPrice = this.course.preco === 0 
+      ? 'GRATUITO' 
+      : new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(this.course.preco);
+    
+    const shareText = `🎓 ${this.course.titulo}\n\n${this.course.descricao}\n\n💡 Carga Horária: ${this.course.cargaHoraria} horas\n💰 ${formattedPrice}\n\n🔗 ${currentUrl}`;
+    
+    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}&quote=${encodeURIComponent(shareText)}`;
     
     window.open(
       facebookShareUrl,
