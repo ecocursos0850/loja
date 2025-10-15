@@ -448,7 +448,10 @@ export class CoursesPageComponent implements OnInit {
 
   // MÉTODO ATUALIZADO: Compartilhar no Facebook
   shareOnFacebook(course: CourseType): void {
-    // Cria uma URL mais amigável para a página de detalhes
+    // PRIMEIRO: Define as meta tags específicas do curso
+    this.metaService.setCourseMetaTags(course);
+    
+    // DEPOIS: Compartilha a URL do curso
     const courseSlug = course.titulo
       .toLowerCase()
       .replace(/[^\w ]+/g, '')
@@ -456,7 +459,6 @@ export class CoursesPageComponent implements OnInit {
     
     const courseUrl = `${window.location.origin}/cursos/${courseSlug}/${course.id}`;
     
-    // URL de compartilhamento do Facebook
     const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(courseUrl)}`;
     
     window.open(

@@ -322,6 +322,7 @@ export class CardDetailsPageComponent implements OnInit {
   
     const id = this.route.snapshot.paramMap.get('code');
     if (id) this.store.dispatch(CoursesActions.selectCourseById({ id: id }));
+    
     this.store.select(coursesItemSelector).subscribe({
       next: course => {
         if (course) {
@@ -330,8 +331,8 @@ export class CardDetailsPageComponent implements OnInit {
           this.videoQuantity = 0;
           this.quantityOfVideos();
           
-          // Configura as meta tags para o Facebook COM PRIORIDADE PARA VÍDEO
-          this.metaService.setCourseMetaTagsWithVideoPriority(course);
+          // Define meta tags específicas para esta página de detalhes
+          this.metaService.setCourseDetailsMetaTags(course);
         }
       }
     });
