@@ -209,8 +209,8 @@ import { NoDataComponent } from '../../../shared/components/NoData/index';
                     <span *ngIf="course.preco === 0" class="text-right">Nenhuma parcela</span>
                   </div>
                 </main>
-<footer class="w-full flex flex-nowrap justify-center gap-2 items-center">
-  <!-- Botão Comprar -->
+<footer class="w-full flex flex-nowrap justify-between gap-2 items-center min-h-[3rem]">
+  <!-- Botão Principal - Texto otimizado -->
   <p-button
     [label]="
       course.categoria?.titulo !== 'GRADUAÇÃO' &&
@@ -219,7 +219,7 @@ import { NoDataComponent } from '../../../shared/components/NoData/index';
         ? 'Comprar'
         : 'Falar com vendedor'
     "
-    styleClass="flex-1 min-w-0 p-2"
+    styleClass="flex-1 min-w-0 p-2 text-sm font-medium whitespace-normal break-words line-clamp-2 h-auto min-h-[2.5rem] flex items-center justify-center"
     [icon]="
       course.categoria?.titulo !== 'GRADUAÇÃO' &&
       course.categoria?.titulo !== '2ª GRADUAÇÃO' &&
@@ -237,11 +237,11 @@ import { NoDataComponent } from '../../../shared/components/NoData/index';
     "
   ></p-button>
 
-  <!-- Botão Compartilhar no Facebook -->
+  <!-- Botão Compartilhar - Texto reduzido -->
   <p-button
     label="Compartilhar"
     icon="pi pi-facebook"
-    styleClass="flex-1 min-w-0 p-2 p-button-primary"
+    styleClass="flex-shrink-0 min-w-[7rem] p-2 p-button-primary text-sm whitespace-nowrap"
     [pTooltip]="'Compartilhar no Facebook'"
     tooltipPosition="top"
     (onClick)="shareOnFacebook(course)"
