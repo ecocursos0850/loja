@@ -209,41 +209,45 @@ import { NoDataComponent } from '../../../shared/components/NoData/index';
                     <span *ngIf="course.preco === 0" class="text-right">Nenhuma parcela</span>
                   </div>
                 </main>
-                <footer class="w-full flex gap-2 justify-content-center">
-                  <!-- Botão Comprar -->
-                  <p-button
-                    [label]="
-                    course.categoria?.titulo !== 'GRADUAÇÃO' && 
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO'
-                        ? 'Comprar'
-                        : 'Falar com vendedor'
-                    "
-                    styleClass="p-2 flex-1"
-                    [icon]="
-                    course.categoria?.titulo !== 'GRADUAÇÃO'&&
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO'
-                        ? 'pi pi-cart-plus'
-                        : 'pi pi-send'
-                    "
-                    [disabled]="disabledButton(course.id)"
-                    (onClick)="
-                    course.categoria?.titulo !== 'GRADUAÇÃO' &&
-                    course.categoria?.titulo !== '2ª GRADUAÇÃO'
-                        ? addToCart(course)
-                        : goToSalesRep()
-                    "
-                  />
-                  
-                  <!-- Botão Compartilhar no Facebook -->
-                  <p-button
-                    label="Compartilhar"
-                    icon="pi pi-facebook"
-                    styleClass="p-2 p-button-primary"
-                    [pTooltip]="'Compartilhar no Facebook'"
-                    tooltipPosition="top"
-                    (onClick)="shareOnFacebook(course)"
-                  />
-                </footer>
+<footer class="w-full flex flex-nowrap justify-center gap-2 items-center">
+  <!-- Botão Comprar -->
+  <p-button
+    [label]="
+      course.categoria?.titulo !== 'GRADUAÇÃO' &&
+      course.categoria?.titulo !== '2ª GRADUAÇÃO' &&
+      course.categoria?.titulo !== 'BACHARELADO'
+        ? 'Comprar'
+        : 'Falar com vendedor'
+    "
+    styleClass="flex-1 min-w-0 p-2"
+    [icon]="
+      course.categoria?.titulo !== 'GRADUAÇÃO' &&
+      course.categoria?.titulo !== '2ª GRADUAÇÃO' &&
+      course.categoria?.titulo !== 'BACHARELADO'
+        ? 'pi pi-cart-plus'
+        : 'pi pi-send'
+    "
+    [disabled]="disabledButton(course.id)"
+    (onClick)="
+      course.categoria?.titulo !== 'GRADUAÇÃO' &&
+      course.categoria?.titulo !== '2ª GRADUAÇÃO' &&
+      course.categoria?.titulo !== 'BACHARELADO'
+        ? addToCart(course)
+        : goToSalesRep()
+    "
+  ></p-button>
+
+  <!-- Botão Compartilhar no Facebook -->
+  <p-button
+    label="Compartilhar"
+    icon="pi pi-facebook"
+    styleClass="flex-1 min-w-0 p-2 p-button-primary"
+    [pTooltip]="'Compartilhar no Facebook'"
+    tooltipPosition="top"
+    (onClick)="shareOnFacebook(course)"
+  ></p-button>
+</footer>
+
               </div>
             </div>
           </div>
