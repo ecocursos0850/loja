@@ -182,7 +182,7 @@ import { DialogModule } from 'primeng/dialog';
             <p class="line-height-4">
               {{ course.descricao }}
             </p>
-            <div class="mt-2 flex flex-column gap-2" *ngIf="course.categoria.titulo != 'PÓS-GRADUAÇÃO / MBA'">
+            <div class="mt-2 flex flex-column gap-2" *ngIf="course.categoria.titulo == 'DIREITO ONLINE'">
               <div class="flex gap-1 align-items-center">
                 <i class="text-red-600 pi pi-info-circle"></i>
                 <small class="font-bold text-base">Atenção</small>
