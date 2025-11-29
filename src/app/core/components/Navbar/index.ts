@@ -447,19 +447,8 @@ export class NavbarComponent implements OnInit {
         next: res => {
           console.log(res.forEach(x => console.log(x)))
   
-          // Adicionar o item fixo MESTRADO/DOUTORADO
-          const mestradoDoutoradoItem = {
-            id: 'mestrado-doutorado',
-            label: 'MESTRADO / DOUTORADO',
-            routerLink: [], // ou null
-            queryParams: null,
-            items: [],
-            externalUrl: 'https://www.funiber.org.br.br/?furriel=0fa4adcadd9641eb909e5f2079e0f6ca0807f2f5',
-            target: '_blank'
-          };
-  
           // CORREÇÃO: Usar spread operator para concatenar arrays
-          this.items = [mestradoDoutoradoItem, ...res];
+          this.items = res;
         }
       });
   }
