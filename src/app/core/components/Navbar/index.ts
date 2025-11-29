@@ -36,103 +36,116 @@ import { StudentPortalButtonComponent } from '../../../shared/components/Student
     NgClass
   ],
   template: `
-    <nav class="container">
-      <div pFocusTrap class="wrapper w-90rem flex align-items-center gap-3">
-        <div *ngIf="logo" class="logo"><a href="#">Logo</a></div>
-        <input type="radio" name="slider" id="menu-btn" />
-        <input type="radio" name="slider" id="close-btn" />
-        <p-button
-          id="next-btn"
-          #nextBtn
-          [disabled]="!(scrollValue() > 0)"
-          (onClick)="previousFilter()"
-          icon="pi pi-chevron-left"
-          [rounded]="true"
-          class="flex align-items-center"
-          [text]="true"
-          [raised]="true"
-          size="small"
+  <nav class="container">
+    <div pFocusTrap class="wrapper w-90rem flex align-items-center gap-3">
+      <div *ngIf="logo" class="logo"><a href="#">Logo</a></div>
+      <input type="radio" name="slider" id="menu-btn" />
+      <input type="radio" name="slider" id="close-btn" />
+      <p-button
+        id="next-btn"
+        #nextBtn
+        [disabled]="!(scrollValue() > 0)"
+        (onClick)="previousFilter()"
+        icon="pi pi-chevron-left"
+        [rounded]="true"
+        class="flex align-items-center"
+        [text]="true"
+        [raised]="true"
+        size="small"
+      />
+      <ul
+        *ngIf="items?.length"
+        class="nav-links"
+        #filterContainer
+        (scroll)="onScroll($event)"
+      >
+        <app-student-portal-button
+          class="w-full flex justify-content-center lg:hidden"
         />
-        <ul
-          *ngIf="items?.length"
-          class="nav-links"
-          #filterContainer
-          (scroll)="onScroll($event)"
-        >
-          <app-student-portal-button
-            class="w-full flex justify-content-center lg:hidden"
-          />
-          <label for="close-btn" class="btn close-btn"
-            ><i class="pi pi-times"></i
-          ></label>
-          <li
-            *ngFor="let item of items; let indexItem = index"
-            (click)="toggleDropItems(item.id)"
-            class="filter-link"
-            (mouseover)="onMouseOver(indexItem, $event)"
-          >
-            <ng-container *ngIf="!(item.items?.length > 0)">
-              <a
-                [queryParams]="item.queryParams"
-                [routerLink]="item.routerLink"
-                pRipple
-                pAutoFocus
-                (click)="closeSideBarMobile()"
-                >{{ item.label }}</a
-              >
-            </ng-container>
-            <ng-container *ngIf="item.items?.length">
-              <a
-                pRipple
-                href="#"
-                class="desktop-item"
-                [routerLink]="item.routerLink"
-                [queryParams]="item.queryParams"
-                pRipple
-                >{{ item.label }}
-                <i class="pi pi-angle-right"> </i>
-              </a>
-              <div></div>
-              <label class="mobile-item">
-                {{ item.label }}
-                <i class="pi pi-angle-right"></i>
-              </label>
-              <ul
-                class="drop-menu"
-                [id]="'dropShow_' + item.id"
-                [style.left.px]="itemWidthRelativeToNav"
-              >
-                <li *ngFor="let menu of item.items">
-                  <a
-                    (click)="closeSideBarMobile()"
-                    [routerLink]="menu.routerLink"
-                    [queryParams]="menu.queryParams"
-                    pRipple
-                    >{{ menu.label }}</a
-                  >
-                </li>
-              </ul>
-            </ng-container>
-          </li>
-        </ul>
-        <label for="menu-btn" class="btn menu-btn"
-          ><i class="pi pi-align-justify bold"></i
+        <label for="close-btn" class="btn close-btn"
+          ><i class="pi pi-times"></i
         ></label>
-        <p-button
-          id="next-btn"
-          #nextBtn
-          (onClick)="nextFilter()"
-          *ngIf="scrollValue() < 1000"
-          icon="pi pi-chevron-right"
-          [rounded]="true"
-          [text]="true"
-          [raised]="true"
-          class="flex align-items-center next-button"
-          size="small"
-        />
-      </div>
-    </nav>
-  `,
+        <li
+          *ngFor="let item of items; let indexItem = index"
+          (click)="toggleDropItems(item.id)"
+          class="filter-link"
+          (mouseover)="onMouseOver(indexItem, $event)"
+        >
+          <ng-container *ngIf="!(item.items?.length > 0)">
+            <a
+              [queryParams]="item.queryParams"
+              [routerLink]="item.routerLink"
+              pRipple
+              pAutoFocus
+              (click)="closeSideBarMobile()"
+              >{{ item.label }}</a
+            >
+          </ng-container>
+          <ng-container *ngIf="item.items?.length">
+            <a
+              pRipple
+              href="#"
+              class="desktop-item"
+              [routerLink]="item.routerLink"
+              [queryParams]="item.queryParams"
+              pRipple
+              >{{ item.label }}
+              <i class="pi pi-angle-right"> </i>
+            </a>
+            <div></div>
+            <label class="mobile-item">
+              {{ item.label }}
+              <i class="pi pi-angle-right"></i>
+            </label>
+            <ul
+              class="drop-menu"
+              [id]="'dropShow_' + item.id"
+              [style.left.px]="itemWidthRelativeToNav"
+            >
+              <li *ngFor="let menu of item.items">
+                <a
+                  (click)="closeSideBarMobile()"
+                  [routerLink]="menu.routerLink"
+                  [queryParams]="menu.queryParams"
+                  pRipple
+                  >{{ menu.label }}</a
+                >
+              </li>
+            </ul>
+          </ng-container>
+        </li>
+        
+        <!-- ITEM FIXO MESTRADO/DOUTORADO NO FINAL -->
+        <li class="filter-link">
+          <a
+            href="https://www.funiber.org.br/?furriel=0fa4adcadd9641eb909e5f2079e0f6ca0807f2f5"
+            target="_blank"
+            rel="noopener noreferrer"
+            pRipple
+            (click)="closeSideBarMobile()"
+          >
+            MESTRADO / DOUTORADO
+          </a>
+        </li>
+      </ul>
+      <label for="menu-btn" class="btn menu-btn"
+        ><i class="pi pi-align-justify bold"></i
+      ></label>
+      <p-button
+        id="next-btn"
+        #nextBtn
+        (onClick)="nextFilter()"
+        *ngIf="scrollValue() < 1000"
+        icon="pi pi-chevron-right"
+        [rounded]="true"
+        [text]="true"
+        [raised]="true"
+        class="flex align-items-center next-button"
+        size="small"
+      />
+    </div>
+  </nav>
+`,
   styles: [
     `
       .container {
@@ -433,10 +446,32 @@ export class NavbarComponent implements OnInit {
       .subscribe({
         next: res => {
           console.log(res.forEach(x => console.log(x)))
-          this.items = res;
+  
+          // Adicionar o item fixo MESTRADO/DOUTORADO
+          const mestradoDoutoradoItem = {
+            id: 'mestrado-doutorado',
+            label: 'MESTRADO / DOUTORADO',
+            routerLink: [], // ou null
+            queryParams: null,
+            items: [],
+            externalUrl: 'https://www.funiber.org.br.br/?furriel=0fa4adcadd9641eb909e5f2079e0f6ca0807f2f5',
+            target: '_blank'
+          };
+  
+          // CORREÇÃO: Usar spread operator para concatenar arrays
+          this.items = [mestradoDoutoradoItem, ...res];
         }
       });
   }
+
+  // Método para lidar com links externos
+  handleItemClick(item: any, event: Event): void {
+    if (item.externalUrl) {
+      event.preventDefault();
+      window.open(item.externalUrl, item.target || '_blank', 'noopener,noreferrer');
+      this.closeSideBarMobile();
+    }
+  }  
 
   onMouseOver(index: number, event: MouseEvent): void {
     const navElement = this.filterContainer.nativeElement.parentElement;
