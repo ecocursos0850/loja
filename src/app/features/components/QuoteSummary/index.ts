@@ -242,6 +242,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
   partnerName = signal<string>('');
   cartItems = signal<CartType[]>([]);
   direitoOnlineTotalHours = signal<number>(0);
+  partnerDiscountPercent = signal<number>(0);
 
   // Novos signals para cálculo detalhado
   direitoOnlineSubtotal = signal<number>(0);
@@ -275,14 +276,24 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
 
   // Verificar se tem desconto para PÓS-GRADUAÇÃO
   hasPosGraduacaoDiscount(): boolean {
-    return this.hasPartner() && this.hasAnyPosGraduacaoCourse();
+    return (
+      this.hasPartner() &&
+      this.hasAnyPosGraduacaoCourse() &&
+      this.getPosGraduacaoDiscountPercent() > 0
+    );
   }
 
   // Obter percentual de desconto para PÓS-GRADUAÇÃO
   getPosGraduacaoDiscountPercent(): number {
+    const partnerPercent = this.partnerDiscountPercent();
+    if (partnerPercent > 0 && partnerPercent <= 100) {
+      return partnerPercent;
+    }
+
     if (this.isNonAffiliatedPartner()) {
       return 20;
-    } else if (this.isAffiliatedPartner()) {
+    }
+    if (this.isAffiliatedPartner()) {
       return 10;
     }
     return 0;
@@ -381,6 +392,7 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         this.direitoOnlineSubtotal.set(this.calculateDireitoOnlineSubtotal());
         this.posGraduacaoSubtotal.set(this.calculatePosGraduacaoSubtotal());
         this.otherCategoriesTotal.set(this.calculateOtherCategoriesTotal());
+        this.partnerDiscountPercent.set(this.parsePartnerDiscount(discountPercent));
 
         // RESETAR ESTADOS
         this.isRegularUser.set(true);
@@ -433,6 +445,8 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
         if (this.hasPosGraduacaoDiscount()) {
           const discountPercent = this.getPosGraduacaoDiscountPercent() / 100;
           this.posGraduacaoDiscountValue.set(this.posGraduacaoSubtotal() * discountPercent);
+        } else {
+          this.posGraduacaoDiscountValue.set(0);
         }
 
         // ATUALIZAR CUPOM - CORREÇÃO PRINCIPAL
@@ -491,6 +505,19 @@ export class QuoteSummaryComponent implements OnInit, OnDestroy {
       console.log('Coupon dialog closed');
       this.changeDetectorRef.markForCheck();
     });
+  }
+
+  private parsePartnerDiscount(value: string | number | null | undefined): number {
+    if (value === null || value === undefined) {
+      return 0;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return 0;
+    }
+
+    return Math.min(parsed, 100);
   }
 
   private calculateTotalPayment(): void {

@@ -104,7 +104,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 </p>              
               </div>
 
-              <!-- Mensagem para PÓS-GRADUAÇÃO / MBA - 20% desconto para parceiros NÃO conveniados -->
+              <!-- Mensagem para PÓS-GRADUAÇÃO / MBA - percentual definido pelo parceiro -->
               <div 
                 *ngIf="showPosGraduacaoDiscountMessage()"
                 class="w-full flex py-4 px-4 bg-purple-100 border border-purple-300 rounded-lg items-center"
@@ -112,7 +112,7 @@ import { GetDirectoryImage } from '../../../shared/pipes/convert-base64.pipe';
                 <i class="pi pi-info-circle text-purple-600 mr-3 text-lg"></i>
                 <p class="text-center font-medium text-purple-800 text-sm m-0">
                   Você é filiado ao parceiro <strong>{{ partnerName() }}</strong> e possui 
-                  <strong>20% de desconto</strong> em cursos de Pós-Graduação/MBA.
+                  <strong>{{ getPosGraduacaoDiscountPercent() }}% de desconto</strong> em cursos de Pós-Graduação/MBA.
                 </p>              
               </div>
 
@@ -361,6 +361,7 @@ export class CartPageComponent implements OnInit, AfterContentInit {
   isRegularUser = signal<boolean>(true);
   direitoOnlineTotalHours = signal<number>(0);
   posGraduacaoItems = signal<CartType[]>([]);
+  partnerDiscountPercent = signal<number>(0);
 
   // Método para verificar se um curso é da categoria Direito Online
   isDireitoOnlineCourse(item: CartType): boolean {
@@ -385,14 +386,24 @@ export class CartPageComponent implements OnInit, AfterContentInit {
 
   // Verificar se tem desconto para PÓS-GRADUAÇÃO
   hasPosGraduacaoDiscount(): boolean {
-    return this.hasPartner() && this.hasAnyPosGraduacaoCourse();
+    return (
+      this.hasPartner() &&
+      this.hasAnyPosGraduacaoCourse() &&
+      this.getPosGraduacaoDiscountPercent() > 0
+    );
   }
 
   // Obter percentual de desconto para PÓS-GRADUAÇÃO
   getPosGraduacaoDiscountPercent(): number {
+    const partnerPercent = this.partnerDiscountPercent();
+    if (partnerPercent > 0 && partnerPercent <= 100) {
+      return partnerPercent;
+    }
+
     if (this.isNonAffiliatedPartner()) {
       return 20; // 20% para parceiros NÃO conveniados
-    } else if (this.isAffiliatedPartner()) {
+    }
+    if (this.isAffiliatedPartner()) {
       return 10; // 10% para parceiros conveniados
     }
     return 0;
@@ -449,7 +460,10 @@ export class CartPageComponent implements OnInit, AfterContentInit {
         this.posGraduacaoItems.set(
           this.items?.filter(item => this.isPosGraduacaoCourse(item)) || []
         );
-  
+        this.partnerDiscountPercent.set(
+          this.parsePartnerDiscount(userDetailsDiscount)
+        );
+
         if (userDetails) {
           userDetails.forEach(res => {
             this.userId = res.id;
@@ -508,7 +522,12 @@ export class CartPageComponent implements OnInit, AfterContentInit {
 
   // Exibir mensagem para PÓS-GRADUAÇÃO / MBA
   showPosGraduacaoDiscountMessage(): boolean {
-    return this.hasPartner() && this.partnerName() !== '' && this.hasAnyPosGraduacaoCourse();
+    return (
+      this.hasPartner() &&
+      this.partnerName() !== '' &&
+      this.hasAnyPosGraduacaoCourse() &&
+      this.getPosGraduacaoDiscountPercent() > 0
+    );
   }
 
   // Exibir mensagem informativa sobre horas
@@ -653,10 +672,25 @@ export class CartPageComponent implements OnInit, AfterContentInit {
     return totalDiscount;
   }
 
+  private parsePartnerDiscount(value: string | number | null | undefined): number {
+    if (value === null || value === undefined) {
+      return 0;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return 0;
+    }
+
+    return Math.min(parsed, 100);
+  }
+
   private getUserType(): string {
     if (this.isRegularUser()) return 'USUÁRIO REGULAR (sem parceiro) - SEM DESCONTO';
-    if (this.isNonAffiliatedPartner()) return 'PARCEIRO NÃO CONVENIADO (horas gratuitas + 20% Pós-Graduação)';
-    if (this.isAffiliatedPartner()) return 'PARCEIRO CONVENIADO (10% desconto)';
+    if (this.isNonAffiliatedPartner())
+      return `PARCEIRO NÃO CONVENIADO (horas gratuitas + ${this.getPosGraduacaoDiscountPercent()}% Pós-Graduação)`;
+    if (this.isAffiliatedPartner())
+      return `PARCEIRO CONVENIADO (${this.getPosGraduacaoDiscountPercent()}% desconto)`;
     return 'TIPO NÃO IDENTIFICADO';
   }
 }

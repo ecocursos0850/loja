@@ -10,6 +10,7 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { CheckoutActions } from '@shared/store/actions/checkout.actions';
 import { CreditCardService } from '@shared/services/credit-card-icons.service';
+import { cartTotalPriceSelector } from '@shared/store/reducers/cart.reducer';
 import { checkoutTotalPaymentSelect } from '@shared/store/reducers/checkout.reducer';
 
 import { AccordionModule } from 'primeng/accordion';
@@ -19,6 +20,7 @@ import { DividerModule } from 'primeng/divider';
 import { DropdownModule } from 'primeng/dropdown';
 import { InputMaskModule } from 'primeng/inputmask';
 import { Store } from '@ngrx/store';
+import { combineLatest } from 'rxjs';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { CalendarModule } from 'primeng/calendar';
@@ -212,12 +214,13 @@ export class CreditCardComponent implements OnInit {
   plots: CreditCardType[] = [];
   invoiceId: string;
   maxParcelasBackend = 10; // fallback máximo de parcelas
+  discountCents = '0';
 
   ngOnInit(): void {
     this.getCreditCardItems();
     this.configFormValues();
     this.getInvoiceId();
-    this.calculateNumberPlots();
+    this.watchCheckoutTotals();
   }
 
   configFormValues(): void {
@@ -250,20 +253,26 @@ export class CreditCardComponent implements OnInit {
     return null;
   }
 
-  calculateNumberPlots(): void {
-    this.store.select(checkoutTotalPaymentSelect).subscribe({
-      next: total => {
-        const maxParcelas = Math.min(this.maxParcelasBackend, 10);
-        this.plots = Array.from({ length: maxParcelas }, (_, index) => {
-          const installment = index + 1;
-          const endValue = (total / installment).toFixed(2);
-          return {
-            name: `${installment}x R$ ${endValue}`,
-            code: installment.toString()
-          };
-        });
-        this.numberPlots = this.plots;
-      }
+  private watchCheckoutTotals(): void {
+    combineLatest([
+      this.store.select(checkoutTotalPaymentSelect),
+      this.store.select(cartTotalPriceSelector)
+    ]).subscribe(([checkoutTotal, cartTotal]) => {
+      const finalTotal = checkoutTotal ?? cartTotal ?? 0;
+      const maxParcelas = Math.min(this.maxParcelasBackend, 10);
+      this.plots = Array.from({ length: maxParcelas }, (_, index) => {
+        const installment = index + 1;
+        const endValue = (finalTotal / installment).toFixed(2);
+        return {
+          name: `${installment}x R$ ${endValue}`,
+          code: installment.toString()
+        };
+      });
+      this.numberPlots = this.plots;
+
+      const realizedCartTotal = cartTotal ?? 0;
+      const discountValue = Math.max(0, realizedCartTotal - finalTotal);
+      this.discountCents = Math.round(discountValue * 100).toString();
     });
   }
 
@@ -280,7 +289,7 @@ export class CreditCardComponent implements OnInit {
     const date = new Date(registerValue.cardExpiration);
     const creditCardNumber = registerValue.creditCardNumber.replace(/\s/g, '');
     const billing: DirectBillingModel = {
-      discount_cents: '0',
+      discount_cents: this.discountCents,
       months: registerValue.numberPlots.code,
       invoice_id: this.invoiceId,
       infoCard: {
