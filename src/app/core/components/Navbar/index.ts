@@ -127,6 +127,19 @@ import { StudentPortalButtonComponent } from '../../../shared/components/Student
             MESTRADO / DOUTORADO
           </a>
         </li>
+        
+        <!-- ITEM FIXO SHOPPING NO FINAL -->
+        <li class="filter-link">
+          <a
+            href="https://vagaba.com.br/"
+            target="_blank"
+            rel="noopener noreferrer"
+            pRipple
+            (click)="closeSideBarMobile()"
+          >
+            SHOPPING ECOCURSOS
+          </a>
+        </li>
       </ul>
       <label for="menu-btn" class="btn menu-btn"
         ><i class="pi pi-align-justify bold"></i
