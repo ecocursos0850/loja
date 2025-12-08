@@ -128,7 +128,7 @@ import { StudentPortalButtonComponent } from '../../../shared/components/Student
           </a>
         </li>
         
-        <!-- ITEM FIXO SHOPPING NO FINAL -->
+        <!-- ITEM FIXO SHOPPING NO FINAL 
         <li class="filter-link">
           <a
             href="https://vagaba.com.br/"
@@ -139,7 +139,7 @@ import { StudentPortalButtonComponent } from '../../../shared/components/Student
           >
             SHOPPING ECOCURSOS
           </a>
-        </li>
+        </li>-->
       </ul>
       <label for="menu-btn" class="btn menu-btn"
         ><i class="pi pi-align-justify bold"></i
